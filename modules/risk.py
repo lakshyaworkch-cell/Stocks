@@ -60,4 +60,3 @@ def historical_risk(returns, confidence=0.95):
         "Historical VaR (%)": -float(quantile),
         "Historical ES (%)": -float(tail.mean())
     }
-
