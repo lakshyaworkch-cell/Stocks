@@ -440,10 +440,13 @@ if run_analysis:
 
             diagnostics = get_diagnostics(result)
 
-            forecast = result.forecast(
-                horizon=forecast_horizon,
-                reindex=False
-            )
+            from modules.analysis import generate_forecast
+
+forecast = generate_forecast(
+    result,
+    horizon=forecast_horizon,
+    simulations=10000
+)
 
             forecast_variance = (
                 forecast.variance.iloc[-1].values
