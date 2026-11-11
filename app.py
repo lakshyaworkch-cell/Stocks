@@ -19,7 +19,12 @@ from modules.charts import (
     returns_chart,
     volatility_chart
 )
-
+from modules.stationarity import stationarity_tests
+from modules.preprocessing import calculate_returns
+from modules.analysis import compare_models
+from modules.forecasting import rolling_forecast, evaluate_forecasts
+from modules.risk import student_t_risk, historical_risk
+from modules.backtesting import var_backtests
 
 # =====================================================
 # 1. PAGE CONFIGURATION
