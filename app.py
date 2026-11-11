@@ -34,13 +34,13 @@ st.set_page_config(
 
 
 # =====================================================
-# 2. DARK THEME AND CUSTOM CSS
+# 2. DARK THEME CSS
 # =====================================================
 
 st.markdown("""
 <style>
 
-/* Main background */
+/* Application background */
 
 .stApp {
     background-color: #0B1120;
@@ -57,17 +57,15 @@ st.markdown("""
 
 h1, h2, h3 {
     color: #F1F5F9 !important;
-    font-weight: 650 !important;
 }
 
 /* Sidebar */
 
 section[data-testid="stSidebar"] {
     background-color: #101A2B;
-    border-right: 1px solid #293951;
 }
 
-/* Metric cards */
+/* Metrics */
 
 div[data-testid="stMetric"] {
     background-color: #151F32;
@@ -78,11 +76,6 @@ div[data-testid="stMetric"] {
 
 div[data-testid="stMetricValue"] {
     color: #00D4AA;
-    font-weight: 700;
-}
-
-div[data-testid="stMetricLabel"] {
-    color: #94A3B8;
 }
 
 /* Buttons */
@@ -90,23 +83,9 @@ div[data-testid="stMetricLabel"] {
 .stButton > button {
     background-color: #00A88F;
     color: white;
+    border-radius: 8px;
     border: none;
-    border-radius: 8px;
-    font-weight: 600;
-}
-
-.stButton > button:hover {
-    background-color: #00C6A5;
-    color: white;
-}
-
-/* Download buttons */
-
-.stDownloadButton > button {
-    background-color: #17263C;
-    color: #00D4AA;
-    border: 1px solid #00A88F;
-    border-radius: 8px;
+    font-weight: bold;
 }
 
 /* Tables */
@@ -114,12 +93,6 @@ div[data-testid="stMetricLabel"] {
 div[data-testid="stDataFrame"] {
     border: 1px solid #293951;
     border-radius: 10px;
-}
-
-/* Dividers */
-
-hr {
-    border-color: #293951;
 }
 
 /* Expanders */
@@ -130,21 +103,10 @@ div[data-testid="stExpander"] {
     border-radius: 10px;
 }
 
-/* Alerts */
+/* Dividers */
 
-div[data-testid="stAlert"] {
-    border-radius: 10px;
-}
-
-/* Tabs */
-
-button[data-baseweb="tab"] {
-    color: #94A3B8;
-    font-weight: 600;
-}
-
-button[data-baseweb="tab"][aria-selected="true"] {
-    color: #00D4AA;
+hr {
+    border-color: #293951;
 }
 
 /* Footer */
@@ -161,73 +123,37 @@ footer {
 """, unsafe_allow_html=True)
 
 
-
 # =====================================================
-# 3. HEADER
+# 3. DASHBOARD HEADER
 # =====================================================
 
-st.markdown(
-    """
-    <div style="
-        background: linear-gradient(120deg, #101A2B, #17263C);
-        padding: 25px;
-        border-radius: 15px;
-        border: 1px solid #293951;
-        margin-bottom: 25px;
-    ">
+st.title("📈 DUTCH QUANT")
 
-        <div style="
-            color: #00D4AA;
-            font-size: 13px;
-            font-weight: bold;
-            letter-spacing: 3px;
-        ">
-            QUANTITATIVE RESEARCH TERMINAL
-        </div>
+st.subheader("Quantitative Research Terminal")
 
-        <h1 style="
-            color: #F1F5F9;
-            font-size: 34px;
-            margin-top: 8px;
-            margin-bottom: 5px;
-        ">
-            DUTCH QUANT
-        </h1>
-
-        <p style="
-            color: #94A3B8;
-            font-size: 15px;
-            margin-bottom: 0;
-        ">
-            Dutch Equity Market | EGARCH Volatility Modelling |
-            Student-t Distribution
-        </p>
-
-    </div>
-    """,
-    unsafe_allow_html=True
+st.caption(
+    "Dutch Equity Market | EGARCH(1,1) | Student-t Distribution"
 )
 
+st.divider()
+
+
 # =====================================================
-# 4. SIDEBAR CONFIGURATION
+# 4. SIDEBAR
 # =====================================================
 
-st.sidebar.markdown("""
-<h2 style="color:#00D4AA;">
-    QUANT CONTROL
-</h2>
-""", unsafe_allow_html=True)
+st.sidebar.title("⚙️ Quant Control")
 
 st.sidebar.caption("MARKET CONFIGURATION")
 
 company = st.sidebar.selectbox(
-    "Select Company",
+    "Select Dutch Company",
     list(DUTCH_STOCKS.keys())
 )
 
 ticker = DUTCH_STOCKS[company]
 
-st.sidebar.markdown("---")
+st.sidebar.divider()
 
 st.sidebar.caption("HISTORICAL DATA")
 
@@ -245,18 +171,16 @@ end_date = st.sidebar.date_input(
     max_value=date.today()
 )
 
-st.sidebar.markdown("---")
+st.sidebar.divider()
 
-st.sidebar.caption("FORECAST SETTINGS")
+st.sidebar.caption("FORECAST CONFIGURATION")
 
 forecast_horizon = st.sidebar.slider(
-    "Forecast Horizon",
-    min_value=1,
-    max_value=30,
-    value=10
+    "Forecast Horizon (Trading Days)",
+    1,
+    30,
+    10
 )
-
-st.sidebar.markdown("---")
 
 run_analysis = st.sidebar.button(
     "RUN QUANT ANALYSIS",
@@ -264,43 +188,22 @@ run_analysis = st.sidebar.button(
     use_container_width=True
 )
 
-st.sidebar.markdown("---")
-
-st.sidebar.caption(
-    "Data source: Yahoo Finance via yfinance"
-)
-
-st.sidebar.caption(
-    "Model: EGARCH(1,1) Student-t"
-)
-
 
 # =====================================================
-# 5. ANALYSIS EXECUTION
+# 5. MAIN ANALYSIS
 # =====================================================
 
 if run_analysis:
 
-    # ---------------------------------------------
-    # DATE VALIDATION
-    # ---------------------------------------------
-
     if start_date >= end_date:
-
-        st.error(
-            "Start date must be earlier than end date."
-        )
-
+        st.error("Start date must be earlier than end date.")
         st.stop()
 
-    # ---------------------------------------------
-    # DOWNLOAD DATA
-    # ---------------------------------------------
+    # Download data
 
-    with st.spinner("Downloading Dutch market data..."):
+    with st.spinner("Downloading market data..."):
 
         try:
-
             df = get_stock_data(
                 ticker,
                 start_date,
@@ -308,123 +211,70 @@ if run_analysis:
             )
 
             if df.empty or len(df) < 100:
-
                 st.error(
                     "Insufficient observations. "
-                    "Please select a longer historical period."
+                    "Choose a longer historical period."
                 )
-
                 st.stop()
 
         except Exception as e:
-
-            st.error(
-                f"Market data error: {str(e)}"
-            )
-
+            st.error(f"Data error: {e}")
             st.stop()
 
-    st.success(
-        f"Market data successfully downloaded: {company} ({ticker})"
-    )
+    st.success(f"Data downloaded: {company} ({ticker})")
 
-    # ---------------------------------------------
-    # ESTIMATE EGARCH MODEL
-    # ---------------------------------------------
+    # Estimate EGARCH
 
-    with st.spinner(
-        "Estimating EGARCH(1,1) Student-t model..."
-    ):
+    with st.spinner("Estimating EGARCH Student-t model..."):
 
         try:
-
-            result = fit_egarch(
-                df["Returns"]
-            )
+            result = fit_egarch(df["Returns"])
 
         except Exception as e:
-
-            st.error(
-                f"EGARCH estimation failed: {str(e)}"
-            )
-
+            st.error(f"Model estimation failed: {e}")
             st.stop()
 
-    # ---------------------------------------------
-    # MODEL FORECAST
-    # ---------------------------------------------
+    # Forecast
 
     try:
-
         forecast_df = get_forecast(
             result,
             forecast_horizon
         )
 
-    except Exception as e:
-
-        st.error(
-            f"Forecast calculation failed: {str(e)}"
-        )
-
-        st.stop()
-
-    # ---------------------------------------------
-    # DIAGNOSTICS
-    # ---------------------------------------------
-
-    try:
-
         diagnostics = get_diagnostics(result)
 
+        parameters = get_parameters(result)
+
     except Exception as e:
-
-        st.error(
-            f"Diagnostic calculation failed: {str(e)}"
-        )
-
+        st.error(f"Analysis error: {e}")
         st.stop()
 
-    parameters = get_parameters(result)
 
     # =================================================
     # 6. MARKET OVERVIEW
     # =================================================
 
-    st.header("Market Overview")
+    st.header("01 | Market Overview")
 
     total_return = (
         df["Close"].iloc[-1] /
         df["Close"].iloc[0] - 1
     ) * 100
 
-    annual_vol = (
-        df["Returns"].std() * np.sqrt(252)
-    )
+    annual_vol = df["Returns"].std() * np.sqrt(252)
 
     latest_price = df["Close"].iloc[-1]
 
-    col1, col2, col3, col4 = st.columns(4)
+    c1, c2, c3, c4 = st.columns(4)
 
-    col1.metric(
-        "Latest Price",
-        f"€{latest_price:.2f}"
-    )
+    c1.metric("Latest Price", f"€{latest_price:.2f}")
 
-    col2.metric(
-        "Total Return",
-        f"{total_return:.2f}%"
-    )
+    c2.metric("Total Return", f"{total_return:.2f}%")
 
-    col3.metric(
-        "Annualized Volatility",
-        f"{annual_vol:.2f}%"
-    )
+    c3.metric("Annual Volatility", f"{annual_vol:.2f}%")
 
-    col4.metric(
-        "Observations",
-        f"{len(df):,}"
-    )
+    c4.metric("Observations", f"{len(df):,}")
 
     st.caption(
         f"Company: {company} | Ticker: {ticker} | "
@@ -433,11 +283,12 @@ if run_analysis:
 
     st.divider()
 
+
     # =================================================
-    # 7. HISTORICAL STOCK PRICE
+    # 7. STOCK PRICE AND RETURNS
     # =================================================
 
-    st.header("01 | Historical Market Performance")
+    st.header("02 | Historical Market Performance")
 
     tab1, tab2 = st.tabs([
         "Stock Price",
@@ -445,24 +296,23 @@ if run_analysis:
     ])
 
     with tab1:
-
         st.plotly_chart(
             price_chart(df),
             use_container_width=True
         )
 
     with tab2:
-
         st.plotly_chart(
             returns_chart(df),
             use_container_width=True
         )
 
+
     # =================================================
     # 8. DESCRIPTIVE STATISTICS
     # =================================================
 
-    st.header("02 | Descriptive Statistics")
+    st.header("03 | Descriptive Statistics")
 
     returns = df["Returns"]
 
@@ -476,7 +326,6 @@ if run_analysis:
             "Excess Kurtosis",
             "Median"
         ],
-
         "Value": [
             returns.mean(),
             returns.std(),
@@ -488,84 +337,45 @@ if run_analysis:
         ]
     })
 
-    col1, col2 = st.columns([1.4, 1])
+    st.dataframe(
+        descriptive,
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "Value": st.column_config.NumberColumn(
+                "Value (%)",
+                format="%.4f"
+            )
+        }
+    )
 
-    with col1:
-
-        st.dataframe(
-            descriptive,
-            use_container_width=True,
-            hide_index=True,
-            column_config={
-                "Value": st.column_config.NumberColumn(
-                    "Value (%)",
-                    format="%.4f"
-                )
-            }
-        )
-
-    with col2:
-
-        st.markdown("""
-        <div style="
-            background:#151F32;
-            padding:20px;
-            border-radius:12px;
-            border:1px solid #293951;
-        ">
-
-        <h4 style="color:#00D4AA;">
-        Return Distribution
-        </h4>
-
-        <p style="color:#94A3B8;">
-        Skewness measures asymmetry in returns.
-        </p>
-
-        <p style="color:#94A3B8;">
-        Excess kurtosis measures tail heaviness
-        relative to a normal distribution.
-        </p>
-
-        <p style="color:#94A3B8;">
-        High kurtosis may indicate extreme market
-        movements occur more frequently.
-        </p>
-
-        </div>
-        """, unsafe_allow_html=True)
 
     # =================================================
     # 9. EGARCH ESTIMATION
     # =================================================
 
-    st.header("03 | EGARCH(1,1) Student-t Estimation")
+    st.header("04 | EGARCH(1,1) Student-t Estimation")
 
-    st.markdown("""
-    The conditional variance equation is:
-
-    \[
-    \\log(\\sigma_t^2) =
-    \\omega +
-    \\alpha (|z_{t-1}|-E|z_{t-1}|) +
-    \\gamma z_{t-1} +
-    \\beta\\log(\\sigma_{t-1}^2)
-    \]
-
-    Innovations follow a standardized Student-t distribution.
-    """)
+    st.latex(
+        r"""
+        \log(\sigma_t^2)=
+        \omega+
+        \alpha(|z_{t-1}|-E|z_{t-1}|)
+        +\gamma z_{t-1}
+        +\beta\log(\sigma_{t-1}^2)
+        """
+    )
 
     with st.expander(
         "View Full Econometric Model Summary",
         expanded=False
     ):
-
         st.code(
             result.summary().as_text(),
             language="text"
         )
 
-    st.subheader("Estimated Model Parameters")
+    st.subheader("Estimated Parameters")
 
     st.dataframe(
         parameters,
@@ -573,78 +383,50 @@ if run_analysis:
         hide_index=True,
         column_config={
             "Estimate": st.column_config.NumberColumn(
-                "Coefficient",
                 format="%.6f"
             ),
             "P-value": st.column_config.NumberColumn(
-                "P-value",
                 format="%.6f"
             )
         }
     )
 
-    st.caption(
-        "The estimated asymmetry coefficient gamma "
-        "measures the impact of positive versus negative "
-        "standardized shocks."
-    )
 
     # =================================================
     # 10. CONDITIONAL VOLATILITY
     # =================================================
 
-    st.header("04 | Conditional Volatility")
+    st.header("05 | Conditional Volatility")
 
     st.plotly_chart(
         volatility_chart(result),
         use_container_width=True
     )
 
-    st.caption(
-        "Conditional volatility estimated using the "
-        "EGARCH(1,1) Student-t specification."
+
+    # =================================================
+    # 11. VOLATILITY FORECAST
+    # =================================================
+
+    st.header("06 | Volatility Forecast")
+
+    f1, f2 = st.columns(2)
+
+    f1.metric(
+        "Forecast Horizon",
+        f"{forecast_horizon} Trading Days"
     )
 
-    # =================================================
-    # 11. VOLATILITY FORECASTING
-    # =================================================
-
-    st.header("05 | Volatility Forecasting")
-
-    forecast_col1, forecast_col2 = st.columns(2)
-
-    with forecast_col1:
-
-        st.metric(
-            "Forecast Horizon",
-            f"{forecast_horizon} Trading Days"
-        )
-
-    with forecast_col2:
-
-        st.metric(
-            "Final Forecast Volatility",
-            f"{forecast_df['Daily Volatility (%)'].iloc[-1]:.4f}%"
-        )
+    f2.metric(
+        "Final Forecast Volatility",
+        f"{forecast_df['Daily Volatility (%)'].iloc[-1]:.4f}%"
+    )
 
     st.dataframe(
         forecast_df,
         use_container_width=True,
-        hide_index=True,
-        column_config={
-            "Variance": st.column_config.NumberColumn(
-                format="%.6f"
-            ),
-            "Daily Volatility (%)": st.column_config.NumberColumn(
-                format="%.4f"
-            ),
-            "Annualized Volatility (%)": st.column_config.NumberColumn(
-                format="%.4f"
-            )
-        }
+        hide_index=True
     )
-
-    st.subheader("Forecasted Annualized Volatility")
 
     st.line_chart(
         forecast_df.set_index("Day")[
@@ -653,159 +435,110 @@ if run_analysis:
     )
 
     st.download_button(
-        label="Download Volatility Forecast",
-        data=forecast_df.to_csv(index=False).encode("utf-8"),
-        file_name=f"{ticker}_egarch_forecast.csv",
+        "Download Volatility Forecast",
+        forecast_df.to_csv(index=False).encode("utf-8"),
+        file_name=f"{ticker}_forecast.csv",
         mime="text/csv"
     )
+
 
     # =================================================
     # 12. MODEL DIAGNOSTICS
     # =================================================
 
-    st.header("06 | Model Diagnostics")
-
-    st.markdown(
-        "Statistical tests for residual adequacy and "
-        "remaining conditional heteroskedasticity."
-    )
-
-    # Extract diagnostic values
+    st.header("07 | Model Diagnostics")
 
     lb10 = diagnostics["Ljung-Box p-value (10)"]
-
     lb20 = diagnostics["Ljung-Box p-value (20)"]
-
     arch_p = diagnostics["ARCH LM p-value"]
-
     jb_stat = diagnostics["Jarque-Bera statistic"]
-
     jb_p = diagnostics["Jarque-Bera p-value"]
 
-    # Diagnostic KPI cards
+    d1, d2, d3, d4 = st.columns(4)
 
-    c1, c2, c3, c4 = st.columns(4)
-
-    c1.metric(
-        "Ljung-Box (10)",
-        f"{lb10:.4f}"
-    )
-
-    c2.metric(
-        "Ljung-Box (20)",
-        f"{lb20:.4f}"
-    )
-
-    c3.metric(
-        "ARCH LM",
-        f"{arch_p:.4f}"
-    )
-
-    c4.metric(
-        "Jarque-Bera",
-        f"{jb_p:.4f}"
-    )
-
-    # Organized diagnostic table
+    d1.metric("Ljung-Box (10)", f"{lb10:.4f}")
+    d2.metric("Ljung-Box (20)", f"{lb20:.4f}")
+    d3.metric("ARCH LM", f"{arch_p:.4f}")
+    d4.metric("Jarque-Bera", f"{jb_p:.4f}")
 
     diagnostic_table = pd.DataFrame({
-
         "Diagnostic": [
             "Ljung-Box (10)",
             "Ljung-Box (20)",
             "ARCH LM",
             "Jarque-Bera"
         ],
-
         "Null Hypothesis": [
             "No residual autocorrelation",
             "No residual autocorrelation",
             "No remaining ARCH effects",
             "Normal residual distribution"
         ],
-
         "Test Statistic": [
             np.nan,
             np.nan,
             np.nan,
             jb_stat
         ],
-
         "P-value": [
             lb10,
             lb20,
             arch_p,
             jb_p
         ],
-
         "Conclusion": [
             "Reject H0" if lb10 < 0.05 else "Do not reject H0",
             "Reject H0" if lb20 < 0.05 else "Do not reject H0",
             "Reject H0" if arch_p < 0.05 else "Do not reject H0",
             "Reject H0" if jb_p < 0.05 else "Do not reject H0"
         ]
-
     })
+
+    st.subheader("Diagnostic Test Results")
 
     st.dataframe(
         diagnostic_table,
         use_container_width=True,
         hide_index=True,
         column_config={
-
             "Test Statistic": st.column_config.NumberColumn(
-                "Test Statistic",
                 format="%.4f"
             ),
-
             "P-value": st.column_config.NumberColumn(
-                "P-value",
                 format="%.6f"
             )
-
         }
     )
 
-    with st.expander("Understanding Model Diagnostics"):
+    with st.expander("Diagnostic Interpretation"):
 
         st.markdown("""
-        **Ljung-Box test**
+        **Ljung-Box:** Tests residual autocorrelation.
 
-        Tests whether standardized residuals exhibit
-        significant autocorrelation.
+        **ARCH LM:** Tests remaining ARCH effects.
 
-        **ARCH LM test**
-
-        Tests whether conditional heteroskedasticity
-        remains in the standardized residuals.
-
-        **Jarque-Bera test**
-
-        Tests whether standardized residuals follow
-        a normal distribution.
+        **Jarque-Bera:** Tests normality of standardized residuals.
 
         A p-value below 0.05 indicates evidence against
         the respective null hypothesis.
 
-        Note: Student-t innovations do not imply that
-        standardized residuals should be normally distributed.
-        Therefore, rejection by Jarque-Bera is not necessarily
-        evidence that the Student-t model is inadequate.
+        Since the model uses Student-t innovations,
+        rejection of normality by Jarque-Bera is not
+        automatically evidence of model failure.
         """)
+
 
     # =================================================
     # 13. STANDARDIZED RESIDUALS
     # =================================================
 
-    st.header("07 | Standardized Residual Analysis")
+    st.header("08 | Standardized Residual Analysis")
 
     residuals = result.std_resid.dropna()
 
-    residual_col1, residual_col2 = st.columns(2)
+    r1, r2 = st.columns(2)
 
-    with residual_col1:
-
-        st.markdown("### Residual Statistics")
+    with r1:
 
         residual_stats = pd.DataFrame({
             "Metric": [
@@ -814,7 +547,6 @@ if run_analysis:
                 "Skewness",
                 "Excess Kurtosis"
             ],
-
             "Value": [
                 residuals.mean(),
                 residuals.std(),
@@ -829,42 +561,52 @@ if run_analysis:
             hide_index=True
         )
 
-    with residual_col2:
-
-        st.markdown("### Residual Distribution")
+    with r2:
 
         st.line_chart(
             residuals,
-            height=260
+            height=280
         )
 
+
     # =================================================
-    # 14. DATA EXPORT
+    # 14. DOWNLOAD RESULTS
     # =================================================
 
-    st.header("08 | Data Export")
+    st.header("09 | Download Research Data")
 
-    export_col1, export_col2 = st.columns(2)
+    x1, x2, x3 = st.columns(3)
 
-    with export_col1:
+    with x1:
 
         st.download_button(
-            "Download Historical Data",
-            data=df.to_csv().encode("utf-8"),
-            file_name=f"{ticker}_historical_data.csv",
+            "Historical Data",
+            df.to_csv().encode("utf-8"),
+            file_name=f"{ticker}_historical.csv",
             mime="text/csv",
             use_container_width=True
         )
 
-    with export_col2:
+    with x2:
 
         st.download_button(
-            "Download EGARCH Parameters",
-            data=parameters.to_csv(index=False).encode("utf-8"),
-            file_name=f"{ticker}_egarch_parameters.csv",
+            "EGARCH Parameters",
+            parameters.to_csv(index=False).encode("utf-8"),
+            file_name=f"{ticker}_parameters.csv",
             mime="text/csv",
             use_container_width=True
         )
+
+    with x3:
+
+        st.download_button(
+            "Diagnostics",
+            diagnostic_table.to_csv(index=False).encode("utf-8"),
+            file_name=f"{ticker}_diagnostics.csv",
+            mime="text/csv",
+            use_container_width=True
+        )
+
 
     # =================================================
     # 15. FOOTER
@@ -872,26 +614,10 @@ if run_analysis:
 
     st.divider()
 
-    st.markdown("""
-    <div style="
-        text-align:center;
-        color:#64748B;
-        padding:15px;
-    ">
-
-    DUTCH QUANTITATIVE FINANCE TERMINAL
-
-    <br>
-
-    EGARCH(1,1) | Student-t | Volatility Research
-
-    <br><br>
-
-    For educational and quantitative research purposes.
-    Not investment advice.
-
-    </div>
-    """, unsafe_allow_html=True)
+    st.caption(
+        "DUTCH QUANT | Quantitative Financial Research | "
+        "EGARCH Student-t | Educational Use Only"
+    )
 
 
 # =====================================================
@@ -900,72 +626,37 @@ if run_analysis:
 
 else:
 
-    st.markdown("""
-    <div style="
-        background:#151F32;
-        border:1px solid #293951;
-        border-radius:15px;
-        padding:35px;
-        text-align:center;
-        margin-top:20px;
-    ">
+    st.info(
+        "Welcome to Dutch Quant. Select a company "
+        "and click RUN QUANT ANALYSIS in the sidebar."
+    )
 
-        <h2 style="color:#00D4AA;">
-            Welcome to Dutch Quant
-        </h2>
+    st.subheader("Research Modules")
 
-        <p style="
-            color:#94A3B8;
-            font-size:16px;
-        ">
-            Quantitative financial research for
-            Dutch equity markets.
-        </p>
+    c1, c2, c3 = st.columns(3)
 
-        <br>
-
-        <p style="color:#CBD5E1;">
-            Select a company and configure the
-            historical period using the sidebar.
-        </p>
-
-        <p style="
-            color:#00D4AA;
-            font-weight:bold;
-        ">
-            Click RUN QUANT ANALYSIS to begin.
-        </p>
-
-    </div>
-    """, unsafe_allow_html=True)
-
-    st.markdown("### Available Research Modules")
-
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-
-        st.info(
-            "**Market Analysis**\n\n"
-            "Historical prices, returns and descriptive statistics."
+    with c1:
+        st.markdown("### 📊 Market Analysis")
+        st.write(
+            "Historical prices, logarithmic returns "
+            "and descriptive statistics."
         )
 
-    with col2:
-
-        st.info(
-            "**EGARCH Modelling**\n\n"
-            "EGARCH(1,1) with Student-t innovations."
+    with c2:
+        st.markdown("### 📈 EGARCH Modelling")
+        st.write(
+            "EGARCH(1,1) with Student-t innovations "
+            "and conditional volatility."
         )
 
-    with col3:
-
-        st.info(
-            "**Risk & Forecasting**\n\n"
-            "Conditional volatility and model diagnostics."
+    with c3:
+        st.markdown("### 🔬 Model Diagnostics")
+        st.write(
+            "Ljung-Box, ARCH LM and Jarque-Bera tests."
         )
 
     st.divider()
 
     st.caption(
-        "Dutch Quant | Quantitative Finance Research Platform"
+        "Dutch Quantitative Finance Research Platform"
     )
