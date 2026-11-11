@@ -31,6 +31,20 @@ st.set_page_config(
 
 
 # ============================================================
+# HIDE STREAMLIT AUTOMATIC MULTIPAGE NAVIGATION
+# This hides the top-left App / Portfolio menu.
+# ============================================================
+
+st.markdown("""
+<style>
+    [data-testid="stSidebarNav"] {
+        display: none !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+
+# ============================================================
 # VISUAL DESIGN
 # ============================================================
 
@@ -196,9 +210,6 @@ def show_error(error):
 
 
 def make_volatility_forecast(result, horizon, model_name):
-    """
-    EGARCH requires simulation for multi-step forecasts.
-    """
 
     if model_name.upper() == "EGARCH" and horizon > 1:
 
@@ -363,7 +374,6 @@ company = st.sidebar.selectbox(
     format_func=lambda x: f"{x} — {DUTCH_STOCKS[x]}"
 )
 
-# Important: get ticker from selected company
 ticker = DUTCH_STOCKS[company]
 
 
@@ -458,9 +468,7 @@ if run_analysis:
                     end_date + timedelta(days=1)
                 )
 
-                returns = calculate_returns(
-                    data["Close"]
-                )
+                returns = calculate_returns(data["Close"])
 
             with st.spinner("Estimating volatility model..."):
 
@@ -471,7 +479,6 @@ if run_analysis:
                 )
 
                 parameters = get_parameters(fitted)
-
                 diagnostics = get_diagnostics(fitted)
 
             with st.spinner("Generating volatility forecasts..."):
@@ -615,11 +622,7 @@ if page == "Overview":
         )
 
         st.plotly_chart(
-            make_chart(
-                fig,
-                "Historical Stock Price",
-                "Price (€)"
-            ),
+            make_chart(fig, "Historical Stock Price", "Price (€)"),
             use_container_width=True
         )
 
@@ -646,9 +649,7 @@ if page == "Overview":
                     f"""
                     <div class="research-card">
                         <b>{name}</b><br>
-                        <span style="color:#94a3b8">
-                            {description}
-                        </span>
+                        <span style="color:#94a3b8">{description}</span>
                     </div>
                     """,
                     unsafe_allow_html=True
@@ -750,11 +751,7 @@ elif page == "Market Data":
     )
 
     st.plotly_chart(
-        make_chart(
-            fig,
-            "Historical Stock Price",
-            "Price (€)"
-        ),
+        make_chart(fig, "Historical Stock Price", "Price (€)"),
         use_container_width=True
     )
 
@@ -769,17 +766,10 @@ elif page == "Market Data":
         )
     )
 
-    fig.add_hline(
-        y=0,
-        line_dash="dash"
-    )
+    fig.add_hline(y=0, line_dash="dash")
 
     st.plotly_chart(
-        make_chart(
-            fig,
-            "Daily Log Returns",
-            "Return (%)"
-        ),
+        make_chart(fig, "Daily Log Returns", "Return (%)"),
         use_container_width=True
     )
 
@@ -802,9 +792,7 @@ elif page == "Statistical Analysis":
     stats = returns.describe().to_frame("Returns")
 
     stats.loc["Skewness"] = returns.skew()
-
     stats.loc["Excess Kurtosis"] = returns.kurtosis()
-
     stats.loc["Annualized Volatility"] = (
         returns.std() * np.sqrt(252)
     )
@@ -844,11 +832,7 @@ elif page == "Statistical Analysis":
     )
 
     st.plotly_chart(
-        make_chart(
-            fig,
-            "Distribution of Returns",
-            "Frequency"
-        ),
+        make_chart(fig, "Distribution of Returns", "Frequency"),
         use_container_width=True
     )
 
@@ -870,24 +854,11 @@ elif page == "Volatility Models":
 
     c1, c2, c3 = st.columns(3)
 
-    c1.metric(
-        "Log Likelihood",
-        f"{result.loglikelihood:.2f}"
-    )
+    c1.metric("Log Likelihood", f"{result.loglikelihood:.2f}")
+    c2.metric("AIC", f"{result.aic:.2f}")
+    c3.metric("BIC", f"{result.bic:.2f}")
 
-    c2.metric(
-        "AIC",
-        f"{result.aic:.2f}"
-    )
-
-    c3.metric(
-        "BIC",
-        f"{result.bic:.2f}"
-    )
-
-    volatility = pd.Series(
-        result.conditional_volatility
-    )
+    volatility = pd.Series(result.conditional_volatility)
 
     fig = go.Figure()
 
@@ -901,11 +872,7 @@ elif page == "Volatility Models":
     )
 
     st.plotly_chart(
-        make_chart(
-            fig,
-            "Conditional Volatility",
-            "Volatility (%)"
-        ),
+        make_chart(fig, "Conditional Volatility", "Volatility (%)"),
         use_container_width=True
     )
 
@@ -955,9 +922,7 @@ elif page == "Model Diagnostics":
 
     st.subheader("Standardized Residuals")
 
-    residuals = pd.Series(
-        result.std_resid
-    ).dropna()
+    residuals = pd.Series(result.std_resid).dropna()
 
     fig = go.Figure()
 
@@ -971,11 +936,7 @@ elif page == "Model Diagnostics":
     )
 
     st.plotly_chart(
-        make_chart(
-            fig,
-            "Standardized Residuals",
-            "Residual"
-        ),
+        make_chart(fig, "Standardized Residuals", "Residual"),
         use_container_width=True
     )
 
@@ -1082,7 +1043,6 @@ elif page == "Forecasting":
                 evaluation = evaluate_forecasts(rolling)
 
             st.session_state.rolling_forecasts = rolling
-
             st.session_state.forecast_evaluation = evaluation
 
             st.success("Forecast evaluation completed.")
@@ -1097,15 +1057,8 @@ elif page == "Forecasting":
 
         c1, c2, c3 = st.columns(3)
 
-        c1.metric(
-            "MSE",
-            f"{evaluation['MSE']:.6f}"
-        )
-
-        c2.metric(
-            "QLIKE",
-            f"{evaluation['QLIKE']:.6f}"
-        )
+        c1.metric("MSE", f"{evaluation['MSE']:.6f}")
+        c2.metric("QLIKE", f"{evaluation['QLIKE']:.6f}")
 
         c3.metric(
             "Forecast Count",
@@ -1235,7 +1188,6 @@ elif page == "Risk Management":
                 )
 
             st.session_state.var_forecasts = var_data
-
             st.session_state.var_backtest_results = backtest
 
             st.success("Backtesting completed.")
@@ -1283,11 +1235,7 @@ elif page == "Risk Management":
         )
 
         st.plotly_chart(
-            make_chart(
-                fig,
-                "Returns vs VaR",
-                "Return (%)"
-            ),
+            make_chart(fig, "Returns vs VaR", "Return (%)"),
             use_container_width=True
         )
 
@@ -1334,7 +1282,6 @@ elif page == "Model Stability & Calibration":
                 )
 
             st.session_state.stability_estimates = estimates
-
             st.session_state.stability_summary = summary
 
             st.success("Stability analysis completed.")
@@ -1359,30 +1306,28 @@ elif page == "Model Stability & Calibration":
             if col not in ["Log Likelihood", "AIC", "BIC"]
         ]
 
-        selected = st.selectbox(
-            "Select Parameter",
-            parameters
-        )
+        if parameters:
 
-        fig = go.Figure()
-
-        fig.add_trace(
-            go.Scatter(
-                x=estimates.index,
-                y=estimates[selected],
-                mode="lines+markers",
-                name=selected
+            selected = st.selectbox(
+                "Select Parameter",
+                parameters
             )
-        )
 
-        st.plotly_chart(
-            make_chart(
-                fig,
-                f"Rolling {selected}",
-                "Estimate"
-            ),
-            use_container_width=True
-        )
+            fig = go.Figure()
+
+            fig.add_trace(
+                go.Scatter(
+                    x=estimates.index,
+                    y=estimates[selected],
+                    mode="lines+markers",
+                    name=selected
+                )
+            )
+
+            st.plotly_chart(
+                make_chart(fig, f"Rolling {selected}", "Estimate"),
+                use_container_width=True
+            )
 
     st.divider()
 
@@ -1397,7 +1342,6 @@ elif page == "Model Stability & Calibration":
                 pit, summary = student_t_pit(result)
 
                 st.session_state.pit_values = pit
-
                 st.session_state.pit_summary = summary
 
                 st.success("PIT diagnostics completed.")
@@ -1446,11 +1390,7 @@ elif page == "Model Stability & Calibration":
             )
 
             st.plotly_chart(
-                make_chart(
-                    fig,
-                    "PIT Distribution",
-                    "Frequency"
-                ),
+                make_chart(fig, "PIT Distribution", "Frequency"),
                 use_container_width=True
             )
 
