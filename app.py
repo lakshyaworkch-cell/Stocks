@@ -32,78 +32,169 @@ st.set_page_config(
 
 
 # ============================================================
-# HIDE STREAMLIT AUTOMATIC MULTIPAGE NAVIGATION
+# TEAL UI THEME
 # ============================================================
 
 st.markdown("""
 <style>
-    [data-testid="stSidebarNav"] {
-        display: none !important;
-    }
-</style>
-""", unsafe_allow_html=True)
 
+/* Main background */
+.stApp {
+    background-color: #0B1923;
+    color: #E1F1F0;
+}
 
-# ============================================================
-# VISUAL DESIGN
-# ============================================================
+/* Main content spacing */
+.block-container {
+    padding-top: 1.5rem;
+    padding-bottom: 1.5rem;
+    max-width: 1500px;
+}
 
-st.markdown("""
-<style>
-    .stApp {
-        background: #0b1220;
-        color: #e5e7eb;
-    }
+/* Sidebar */
+[data-testid="stSidebar"] {
+    background-color: #102630;
+    border-right: 1px solid #21434B;
+}
 
-    [data-testid="stSidebar"] {
-        background: #111b2e;
-        border-right: 1px solid #26364d;
-    }
+[data-testid="stSidebar"] * {
+    color: #D9EEEE;
+}
 
-    [data-testid="stSidebar"] * {
-        color: #e5e7eb;
-    }
+/* Headings */
+h1, h2, h3 {
+    color: #E1F1F0 !important;
+    letter-spacing: -0.3px;
+}
 
-    h1, h2, h3 {
-        color: #f8fafc !important;
-    }
+h1 {
+    font-size: 1.8rem !important;
+}
 
-    p, label {
-        color: #cbd5e1;
-    }
+h2 {
+    font-size: 1.35rem !important;
+}
 
-    div[data-testid="stMetric"] {
-        background: #17243a;
-        border: 1px solid #2b3b54;
-        padding: 16px;
-        border-radius: 10px;
-    }
+h3 {
+    font-size: 1.05rem !important;
+}
 
-    div[data-testid="stMetricLabel"] {
-        color: #94a3b8;
-    }
+/* Paragraphs */
+p, label {
+    color: #B5CFD0;
+}
 
-    div[data-testid="stMetricValue"] {
-        color: #38bdf8;
-    }
+/* Compact metric cards */
+div[data-testid="stMetric"] {
+    background: #12313A;
+    border: 1px solid #24515A;
+    border-radius: 9px;
+    padding: 9px 12px;
+    min-height: 0;
+}
 
-    div.stButton > button {
-        border-radius: 8px;
-        font-weight: 600;
-        min-height: 42px;
-    }
+/* Metric labels */
+div[data-testid="stMetricLabel"] {
+    color: #9ABDC0 !important;
+    font-size: 0.76rem !important;
+}
 
-    .research-card {
-        background: #17243a;
-        border: 1px solid #2b3b54;
-        border-radius: 10px;
-        padding: 18px;
-        margin-bottom: 12px;
-    }
+/* Metric values */
+div[data-testid="stMetricValue"] {
+    color: #5DE0CF !important;
+    font-size: 1.35rem !important;
+    font-weight: 700;
+}
 
-    hr {
-        border-color: #26364d;
-    }
+/* Metric delta */
+div[data-testid="stMetricDelta"] {
+    font-size: 0.72rem !important;
+}
+
+/* Reduce vertical gaps between elements */
+div[data-testid="stVerticalBlock"] {
+    gap: 0.75rem;
+}
+
+/* Buttons */
+div.stButton > button {
+    background: #167C78;
+    color: #FFFFFF;
+    border: 1px solid #2AA69A;
+    border-radius: 7px;
+    font-weight: 600;
+    min-height: 36px;
+    padding: 5px 12px;
+}
+
+div.stButton > button:hover {
+    background: #209A8D;
+    color: white;
+    border-color: #5DE0CF;
+}
+
+/* Inputs */
+div[data-baseweb="select"] > div,
+div[data-baseweb="input"] > div {
+    background-color: #16323B;
+    border-color: #31545C;
+}
+
+/* Dataframes */
+[data-testid="stDataFrame"] {
+    border: 1px solid #28505A;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+/* Tabs */
+button[data-baseweb="tab"] {
+    color: #A9C7C9;
+}
+
+button[data-baseweb="tab"][aria-selected="true"] {
+    color: #5DE0CF;
+    border-bottom-color: #36B9A9;
+}
+
+/* Dividers */
+hr {
+    border-color: #24444D;
+}
+
+/* Research cards */
+.research-card {
+    background: #12313A;
+    border: 1px solid #28505A;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 6px;
+    min-height: 65px;
+}
+
+.research-card b {
+    color: #5DE0CF;
+    font-size: 0.9rem;
+}
+
+.research-card span {
+    color: #A9C7C9;
+    font-size: 0.76rem;
+}
+
+/* Compact info panels */
+.compact-panel {
+    background: #12313A;
+    border: 1px solid #28505A;
+    border-radius: 8px;
+    padding: 10px 12px;
+}
+
+/* Hide automatic Streamlit navigation */
+[data-testid="stSidebarNav"] {
+    display: none !important;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -127,7 +218,7 @@ DEFAULTS = {
 
     "analysis_start": None,
     "analysis_end": None,
-    "analysis_horizon": 5,
+    "analysis_horizon": 1,
 
     "model_comparison": None,
     "rolling_forecasts": None,
@@ -175,18 +266,29 @@ def clear_old_results():
         st.session_state[key] = None
 
 
-def make_chart(fig, title, y_title, height=420):
+def make_chart(fig, title, y_title, height=360):
 
     fig.update_layout(
-        title=title,
+        title=dict(text=title, font=dict(size=16)),
         template="plotly_dark",
-        paper_bgcolor="#0b1220",
-        plot_bgcolor="#111b2e",
-        font=dict(color="#e5e7eb"),
+        paper_bgcolor="#0B1923",
+        plot_bgcolor="#102630",
+        font=dict(color="#D9EEEE"),
         xaxis_title="Date",
         yaxis_title=y_title,
         height=height,
-        margin=dict(l=25, r=25, t=60, b=25)
+        margin=dict(l=25, r=20, t=48, b=25),
+        colorway=["#42CFC0", "#5B9BD5", "#D9A441", "#A78BFA"]
+    )
+
+    fig.update_xaxes(
+        gridcolor="#203C45",
+        zerolinecolor="#31535B"
+    )
+
+    fig.update_yaxes(
+        gridcolor="#203C45",
+        zerolinecolor="#31535B"
     )
 
     return fig
@@ -199,7 +301,6 @@ def show_error(error):
 def make_volatility_forecast(result, horizon, model_name):
 
     if model_name.upper() == "EGARCH" and horizon > 1:
-
         return result.forecast(
             horizon=horizon,
             method="simulation",
@@ -229,7 +330,6 @@ def build_rolling_var(returns, confidence=0.95, window=500):
         train = returns.iloc[i-window:i]
 
         try:
-
             fitted = fit_model(
                 train,
                 model_name="EGARCH",
@@ -264,7 +364,6 @@ def build_rolling_var(returns, confidence=0.95, window=500):
         raise RuntimeError("No valid rolling VaR forecasts.")
 
     output = pd.DataFrame(records).set_index("Date")
-
     output.attrs["attempted"] = len(returns) - window
     output.attrs["failed"] = failed
 
@@ -279,7 +378,6 @@ def make_ewma_forecasts(
 ):
 
     returns = pd.Series(returns).dropna().astype(float)
-
     records = []
 
     for forecast_date in forecast_index:
@@ -293,7 +391,6 @@ def make_ewma_forecasts(
             continue
 
         train = returns.iloc[position-window:position]
-
         initial_count = min(30, len(train))
 
         variance = float(
@@ -304,14 +401,12 @@ def make_ewma_forecasts(
             continue
 
         for observation in train.iloc[initial_count:]:
-
             variance = (
                 decay * variance
                 + (1 - decay) * float(observation) ** 2
             )
 
         if np.isfinite(variance) and variance > 0:
-
             records.append({
                 "Date": forecast_date,
                 "Actual Return": float(returns.loc[forecast_date]),
@@ -331,9 +426,6 @@ def make_ewma_forecasts(
 
 st.sidebar.title("Stock Research")
 
-
-# 1. MARKET SELECTION
-
 st.sidebar.header("1. Market Selection")
 
 company = st.sidebar.selectbox(
@@ -344,8 +436,6 @@ company = st.sidebar.selectbox(
 
 ticker = DUTCH_STOCKS[company]
 
-
-# 2. DATE SELECTION
 
 st.sidebar.header("2. Date Selection")
 
@@ -359,8 +449,6 @@ end_date = st.sidebar.date_input(
     value=date.today()
 )
 
-
-# 3. MODEL CONFIGURATION
 
 st.sidebar.header("3. Model Configuration")
 
@@ -382,8 +470,6 @@ forecast_horizon = st.sidebar.slider(
 )
 
 
-# 4. RUN ANALYSIS
-
 st.sidebar.header("4. Run Analysis")
 
 run_analysis = st.sidebar.button(
@@ -391,8 +477,6 @@ run_analysis = st.sidebar.button(
     use_container_width=True
 )
 
-
-# 5. RESEARCH NAVIGATION
 
 st.sidebar.header("5. Research Navigation")
 
@@ -419,29 +503,25 @@ page = st.sidebar.radio(
 if run_analysis:
 
     if start_date >= end_date:
-
-        st.sidebar.error(
-            "End date must be after start date."
-        )
+        st.sidebar.error("End date must be after start date.")
 
     else:
-
         try:
 
             with st.spinner("Downloading stock market data..."):
 
-                data = get_stock_data(
+                new_data = get_stock_data(
                     ticker,
                     start_date,
                     end_date + timedelta(days=1)
                 )
 
-                returns = calculate_returns(data["Close"])
+                new_returns = calculate_returns(new_data["Close"])
 
             with st.spinner("Estimating volatility model..."):
 
                 fitted = fit_model(
-                    returns,
+                    new_returns,
                     model_name=model_name,
                     distribution=distribution
                 )
@@ -459,8 +539,8 @@ if run_analysis:
 
             clear_old_results()
 
-            st.session_state.stock_data = data
-            st.session_state.returns = returns
+            st.session_state.stock_data = new_data
+            st.session_state.returns = new_returns
             st.session_state.model_result = fitted
             st.session_state.model_parameters = parameters
             st.session_state.diagnostics = diagnostics
@@ -475,12 +555,9 @@ if run_analysis:
             st.session_state.analysis_end = end_date
             st.session_state.analysis_horizon = forecast_horizon
 
-            st.sidebar.success(
-                "Analysis completed successfully!"
-            )
+            st.sidebar.success("Analysis completed!")
 
         except Exception as error:
-
             st.error(f"Analysis failed: {error}")
 
 
@@ -509,28 +586,13 @@ if has_data and page == "Overview":
 
     c1, c2, c3, c4 = st.columns(4)
 
-    c1.metric(
-        "Selected Stock",
-        st.session_state.selected_company
-    )
-
-    c2.metric(
-        "Ticker",
-        st.session_state.selected_ticker
-    )
-
-    c3.metric(
-        "Volatility Model",
-        st.session_state.selected_model
-    )
-
-    c4.metric(
-        "Observations",
-        f"{len(returns):,}"
-    )
+    c1.metric("Stock", st.session_state.selected_company)
+    c2.metric("Ticker", st.session_state.selected_ticker)
+    c3.metric("Model", st.session_state.selected_model)
+    c4.metric("Observations", f"{len(returns):,}")
 
     st.caption(
-        f"Period: {st.session_state.analysis_start} to "
+        f"{st.session_state.analysis_start} — "
         f"{st.session_state.analysis_end} | "
         f"Distribution: {st.session_state.selected_distribution}"
     )
@@ -547,8 +609,8 @@ if page == "Overview":
     st.header("Quantitative Research Dashboard")
 
     st.write(
-        "Select a Dutch stock from the left sidebar, configure "
-        "your model and load the data to begin your analysis."
+        "Select a Dutch stock, configure the model and load data "
+        "to begin your analysis."
     )
 
     if has_data:
@@ -561,12 +623,12 @@ if page == "Overview":
         )
 
         col2.metric(
-            "Latest Return",
+            "Daily Return",
             f"{returns.iloc[-1]:.2f}%"
         )
 
         col3.metric(
-            "Historical Annual Volatility",
+            "Annual Volatility",
             f"{returns.std() * np.sqrt(252):.2f}%"
         )
 
@@ -575,7 +637,7 @@ if page == "Overview":
             f"{result.aic:.2f}"
         )
 
-        st.subheader("Stock Price Overview")
+        st.subheader("Stock Price")
 
         fig = go.Figure()
 
@@ -584,7 +646,8 @@ if page == "Overview":
                 x=data.index,
                 y=data["Close"],
                 mode="lines",
-                name="Adjusted Close"
+                name="Adjusted Close",
+                line=dict(color="#42CFC0", width=2)
             )
         )
 
@@ -593,28 +656,26 @@ if page == "Overview":
             use_container_width=True
         )
 
-        cols = st.columns(3)
+        cols = st.columns(4)
 
         sections = [
-            ("Market Data", "Price and return analysis"),
+            ("Market Data", "Price and returns"),
             ("Statistical Analysis", "Distribution and stationarity"),
-            ("Volatility Models", "EGARCH and GARCH estimation"),
-            ("Model Diagnostics", "Residual and ARCH testing"),
-            ("Forecasting", "Future conditional volatility"),
-            ("Risk Management", "VaR and Expected Shortfall"),
-            ("Model Stability & Calibration", "Parameter and PIT testing"),
-            ("Forecast Comparison", "EWMA and DM comparison"),
+            ("Volatility Models", "EGARCH and GARCH"),
+            ("Model Diagnostics", "Residual tests"),
+            ("Forecasting", "Volatility forecasts"),
+            ("Risk Management", "VaR and ES"),
+            ("Model Stability", "Stability and PIT"),
+            ("Forecast Comparison", "EWMA and DM test"),
         ]
 
         for i, (name, description) in enumerate(sections):
-
-            with cols[i % 3]:
-
+            with cols[i % 4]:
                 st.markdown(
                     f"""
                     <div class="research-card">
                         <b>{name}</b><br>
-                        <span style="color:#94a3b8">{description}</span>
+                        <span>{description}</span>
                     </div>
                     """,
                     unsafe_allow_html=True
@@ -623,28 +684,22 @@ if page == "Overview":
     else:
 
         st.info(
-            "Your dashboard is ready. Select a stock and click "
-            "'Load Data & Run Analysis' in the left sidebar."
+            "Choose a stock and click Load Data & Run Analysis "
+            "in the sidebar."
         )
 
-        st.subheader("Available Research Tools")
-
-        cols = st.columns(3)
-
-        cols[0].metric("Volatility Models", "3")
-        cols[1].metric("Return Distributions", "3")
-        cols[2].metric("Research Pages", "8")
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Volatility Models", "3")
+        c2.metric("Distributions", "3")
+        c3.metric("Research Pages", "8")
 
         st.markdown("""
-        **Available analysis**
-
-        - EGARCH(1,1), GARCH(1,1), GJR-GARCH
-        - Student-t, normal and skewed Student-t innovations
+        - EGARCH, GARCH and GJR-GARCH
+        - Student-t, normal and skewed Student-t
         - ADF and KPSS stationarity tests
         - Residual and ARCH diagnostics
-        - Multi-step volatility forecasts
-        - Rolling out-of-sample evaluation
-        - EWMA benchmark and Diebold-Mariano tests
+        - Rolling volatility forecasts
+        - EWMA benchmark and DM tests
         - Parameter stability and PIT calibration
         - Historical and parametric VaR and ES
         - Kupiec and Christoffersen backtesting
@@ -652,28 +707,18 @@ if page == "Overview":
 
 
 # ============================================================
-# PAGES REQUIRING DATA
+# DATA REQUIRED MESSAGE
 # ============================================================
 
 elif not has_data:
 
     st.header(page)
 
-    st.warning(
-        "No stock analysis has been loaded yet."
-    )
+    st.warning("No stock analysis has been loaded yet.")
 
-    st.markdown("""
-    To display this research section:
-
-    1. Select a company in the left sidebar.
-    2. Select the start and end dates.
-    3. Select the volatility model and distribution.
-    4. Click **Load Data & Run Analysis**.
-    """)
-
-    st.info(
-        "Load market data to populate this section's charts and statistics."
+    st.write(
+        "Select a company, set the date range and model, "
+        "then click Load Data & Run Analysis."
     )
 
 
@@ -687,18 +732,10 @@ elif page == "Market Data":
 
     c1, c2, c3 = st.columns(3)
 
-    c1.metric(
-        "Latest Price",
-        f"€{data['Close'].iloc[-1]:,.2f}"
-    )
-
-    c2.metric(
-        "Latest Daily Return",
-        f"{returns.iloc[-1]:.2f}%"
-    )
-
+    c1.metric("Latest Price", f"€{data['Close'].iloc[-1]:,.2f}")
+    c2.metric("Daily Return", f"{returns.iloc[-1]:.2f}%")
     c3.metric(
-        "Annualized Volatility",
+        "Annual Volatility",
         f"{returns.std() * np.sqrt(252):.2f}%"
     )
 
@@ -709,12 +746,13 @@ elif page == "Market Data":
             x=data.index,
             y=data["Close"],
             mode="lines",
-            name="Adjusted Close"
+            name="Price",
+            line=dict(color="#42CFC0", width=2)
         )
     )
 
     st.plotly_chart(
-        make_chart(fig, "Historical Stock Price", "Price (€)"),
+        make_chart(fig, "Stock Price", "Price (€)"),
         use_container_width=True
     )
 
@@ -725,11 +763,12 @@ elif page == "Market Data":
             x=returns.index,
             y=returns,
             mode="lines",
-            name="Daily Returns"
+            name="Returns",
+            line=dict(color="#5B9BD5", width=1)
         )
     )
 
-    fig.add_hline(y=0, line_dash="dash")
+    fig.add_hline(y=0, line_dash="dash", line_color="#6B8A91")
 
     st.plotly_chart(
         make_chart(fig, "Daily Log Returns", "Return (%)"),
@@ -744,9 +783,9 @@ elif page == "Market Data":
     ]
 
     st.dataframe(
-        data[concise_columns].tail(10).round(2),
+        data[concise_columns].tail(8).round(2),
         use_container_width=True,
-        height=320
+        height=260
     )
 
 
@@ -758,29 +797,17 @@ elif page == "Statistical Analysis":
 
     st.header("Statistical Analysis")
 
-    st.subheader("Descriptive Statistics")
+    c1, c2, c3, c4 = st.columns(4)
 
-    stat_cols = st.columns(4)
-
-    stat_cols[0].metric(
-        "Observations",
-        f"{returns.count():,}"
-    )
-
-    stat_cols[1].metric(
-        "Mean Return",
-        f"{returns.mean():.3f}%"
-    )
-
-    stat_cols[2].metric(
-        "Daily Std. Dev.",
-        f"{returns.std():.3f}%"
-    )
-
-    stat_cols[3].metric(
-        "Annualized Volatility",
+    c1.metric("Observations", f"{returns.count():,}")
+    c2.metric("Mean", f"{returns.mean():.3f}%")
+    c3.metric("Std. Dev.", f"{returns.std():.3f}%")
+    c4.metric(
+        "Annual Volatility",
         f"{returns.std() * np.sqrt(252):.2f}%"
     )
+
+    st.subheader("Distribution Summary")
 
     concise_stats = pd.DataFrame({
         "Statistic": [
@@ -802,38 +829,35 @@ elif page == "Statistical Analysis":
     st.dataframe(
         concise_stats.round(3),
         hide_index=True,
-        use_container_width=True
+        use_container_width=True,
+        height=240
     )
 
-    st.subheader("Stationarity Tests")
+    st.subheader("Stationarity")
 
     try:
-
         stationarity = stationarity_tests(returns)
-
         st.dataframe(
             stationarity,
-            use_container_width=True
+            use_container_width=True,
+            height=220
         )
-
     except Exception as error:
-
         show_error(error)
-
-    st.subheader("Return Distribution")
 
     fig = go.Figure()
 
     fig.add_trace(
         go.Histogram(
             x=returns,
-            nbinsx=60,
-            name="Returns"
+            nbinsx=50,
+            name="Returns",
+            marker_color="#42CFC0"
         )
     )
 
     st.plotly_chart(
-        make_chart(fig, "Distribution of Returns", "Frequency"),
+        make_chart(fig, "Return Distribution", "Frequency"),
         use_container_width=True
     )
 
@@ -846,11 +870,12 @@ elif page == "Volatility Models":
 
     st.header("Volatility Models")
 
-    st.subheader("Parameter Estimates")
+    st.subheader("Estimated Parameters")
 
     st.dataframe(
         st.session_state.model_parameters,
-        use_container_width=True
+        use_container_width=True,
+        height=250
     )
 
     c1, c2, c3 = st.columns(3)
@@ -868,7 +893,8 @@ elif page == "Volatility Models":
             x=volatility.index,
             y=volatility,
             mode="lines",
-            name="Conditional Volatility"
+            name="Conditional Volatility",
+            line=dict(color="#42CFC0", width=1.7)
         )
     )
 
@@ -882,21 +908,16 @@ elif page == "Volatility Models":
     if st.button("Run Nine-Model Comparison"):
 
         try:
-
             with st.spinner("Estimating models..."):
-
                 comparison = compare_models(returns)
 
             st.session_state.model_comparison = comparison
-
             st.success("Comparison completed.")
 
         except Exception as error:
-
             show_error(error)
 
     if st.session_state.model_comparison is not None:
-
         st.dataframe(
             st.session_state.model_comparison,
             use_container_width=True
@@ -913,31 +934,27 @@ elif page == "Model Diagnostics":
 
     diagnostics = st.session_state.diagnostics
 
-    diagnostic_table = pd.DataFrame(
-        [
-            {
-                "Diagnostic": name,
-                "Result": (
-                    f"{value:.4f}"
-                    if isinstance(
-                        value,
-                        (int, float, np.integer, np.floating)
-                    )
-                    else str(value)
+    diagnostic_table = pd.DataFrame([
+        {
+            "Test": name,
+            "Result": (
+                f"{value:.4f}"
+                if isinstance(
+                    value,
+                    (int, float, np.integer, np.floating)
                 )
-            }
-            for name, value in diagnostics.items()
-        ]
-    )
+                else str(value)
+            )
+        }
+        for name, value in diagnostics.items()
+    ])
 
     st.dataframe(
         diagnostic_table,
         hide_index=True,
         use_container_width=True,
-        height=min(260, 45 + 38 * len(diagnostic_table))
+        height=250
     )
-
-    st.subheader("Standardized Residuals")
 
     residuals = pd.Series(result.std_resid).dropna()
 
@@ -948,9 +965,12 @@ elif page == "Model Diagnostics":
             x=residuals.index,
             y=residuals,
             mode="lines",
-            name="Standardized Residuals"
+            name="Standardized Residuals",
+            line=dict(color="#42CFC0", width=1)
         )
     )
+
+    fig.add_hline(y=0, line_dash="dash", line_color="#6B8A91")
 
     st.plotly_chart(
         make_chart(fig, "Standardized Residuals", "Residual"),
@@ -959,7 +979,7 @@ elif page == "Model Diagnostics":
 
     st.caption(
         "For p-values below 0.05, reject the corresponding null hypothesis. "
-        "A larger p-value does not prove the model is correctly specified."
+        "Non-rejection does not prove correct model specification."
     )
 
 
@@ -973,41 +993,42 @@ elif page == "Forecasting":
 
     forecast = st.session_state.forecast_result
 
-    variance_values = (
-        forecast.variance.iloc[-1].to_numpy(dtype=float)
-    )
+    variance_values = forecast.variance.iloc[-1].to_numpy(dtype=float)
 
     forecast_table = pd.DataFrame({
-        "Forecast Day": np.arange(1, len(variance_values) + 1),
-        "Forecast Variance": variance_values,
-        "Forecast Volatility (%)": np.sqrt(variance_values)
+        "Day": np.arange(1, len(variance_values) + 1),
+        "Variance": variance_values,
+        "Volatility (%)": np.sqrt(variance_values)
     })
 
     st.dataframe(
-        forecast_table,
-        use_container_width=True
+        forecast_table.round(4),
+        hide_index=True,
+        use_container_width=True,
+        height=230
     )
 
     fig = go.Figure()
 
     fig.add_trace(
         go.Scatter(
-            x=forecast_table["Forecast Day"],
-            y=forecast_table["Forecast Volatility (%)"],
+            x=forecast_table["Day"],
+            y=forecast_table["Volatility (%)"],
             mode="lines+markers",
-            name="Forecast Volatility"
+            name="Forecast",
+            line=dict(color="#42CFC0", width=2)
         )
     )
 
     fig.update_layout(
         template="plotly_dark",
         title="Future Conditional Volatility",
-        paper_bgcolor="#0b1220",
-        plot_bgcolor="#111b2e",
-        font=dict(color="#e5e7eb"),
+        paper_bgcolor="#0B1923",
+        plot_bgcolor="#102630",
+        font=dict(color="#D9EEEE"),
         xaxis_title="Forecast Day",
         yaxis_title="Volatility (%)",
-        height=420
+        height=340
     )
 
     st.plotly_chart(fig, use_container_width=True)
@@ -1027,7 +1048,6 @@ elif page == "Forecasting":
     if st.button("Run Rolling Forecast"):
 
         try:
-
             with st.spinner("Running rolling estimation..."):
 
                 rolling = rolling_forecast(
@@ -1045,7 +1065,6 @@ elif page == "Forecasting":
             st.success("Forecast evaluation completed.")
 
         except Exception as error:
-
             show_error(error)
 
     if st.session_state.forecast_evaluation is not None:
@@ -1054,17 +1073,17 @@ elif page == "Forecasting":
 
         c1, c2, c3 = st.columns(3)
 
-        c1.metric("MSE", f"{evaluation['MSE']:.6f}")
-        c2.metric("QLIKE", f"{evaluation['QLIKE']:.6f}")
-
+        c1.metric("MSE", f"{evaluation['MSE']:.5f}")
+        c2.metric("QLIKE", f"{evaluation['QLIKE']:.5f}")
         c3.metric(
-            "Forecast Count",
+            "Forecasts",
             evaluation["Forecast Observations"]
         )
 
         st.dataframe(
-            st.session_state.rolling_forecasts.tail(30),
-            use_container_width=True
+            st.session_state.rolling_forecasts.tail(10),
+            use_container_width=True,
+            height=260
         )
 
 
@@ -1091,15 +1110,8 @@ elif page == "Risk Management":
 
     c1, c2 = st.columns(2)
 
-    c1.metric(
-        "Historical VaR",
-        f"{historical['VaR']:.4f}%"
-    )
-
-    c2.metric(
-        "Historical ES",
-        f"{historical['ES']:.4f}%"
-    )
+    c1.metric("Historical VaR", f"{historical['VaR']:.3f}%")
+    c2.metric("Historical ES", f"{historical['ES']:.3f}%")
 
     st.divider()
 
@@ -1108,7 +1120,6 @@ elif page == "Risk Management":
     if st.session_state.selected_distribution == "t":
 
         try:
-
             forecast = result.forecast(
                 horizon=1,
                 method="analytic",
@@ -1125,15 +1136,8 @@ elif page == "Risk Management":
 
             c1, c2 = st.columns(2)
 
-            c1.metric(
-                "Forecast VaR",
-                f"{risk['VaR']:.4f}%"
-            )
-
-            c2.metric(
-                "Forecast ES",
-                f"{risk['ES']:.4f}%"
-            )
+            c1.metric("Forecast VaR", f"{risk['VaR']:.3f}%")
+            c2.metric("Forecast ES", f"{risk['ES']:.3f}%")
 
             st.caption(
                 f"Student-t degrees of freedom: "
@@ -1141,11 +1145,9 @@ elif page == "Risk Management":
             )
 
         except Exception as error:
-
             show_error(error)
 
     else:
-
         st.info(
             "Select Student-t distribution in the sidebar for "
             "parametric Student-t risk calculations."
@@ -1156,7 +1158,7 @@ elif page == "Risk Management":
     st.subheader("Rolling VaR Backtesting")
 
     window = st.number_input(
-        "Backtest Estimation Window",
+        "Estimation Window",
         min_value=250,
         max_value=max(250, len(returns) - 1),
         value=max(250, min(500, len(returns) - 20)),
@@ -1167,7 +1169,6 @@ elif page == "Risk Management":
     if st.button("Run VaR Backtest"):
 
         try:
-
             with st.spinner("Running rolling VaR backtest..."):
 
                 var_data = build_rolling_var(
@@ -1188,25 +1189,40 @@ elif page == "Risk Management":
             st.success("Backtesting completed.")
 
         except Exception as error:
-
             show_error(error)
 
     if st.session_state.var_backtest_results is not None:
 
-        st.dataframe(
-            pd.DataFrame(
-                list(st.session_state.var_backtest_results.items()),
-                columns=["Statistic", "Value"]
-            ),
-            use_container_width=True
-        )
+        st.subheader("Backtest Results")
+
+        backtest = st.session_state.var_backtest_results
+
+        if isinstance(backtest, dict):
+
+            # Compact display instead of a large table
+            result_items = list(backtest.items())
+
+            result_cols = st.columns(min(3, len(result_items)))
+
+            for i, (name, value) in enumerate(result_items):
+                with result_cols[i % len(result_cols)]:
+
+                    if isinstance(value, (int, float, np.integer, np.floating)):
+                        display_value = f"{value:.4f}"
+                    else:
+                        display_value = str(value)
+
+                    st.metric(name, display_value)
+
+        else:
+            st.write(backtest)
 
         var_data = st.session_state.var_forecasts
 
         st.caption(
             f"Failed estimations: "
-            f"{var_data.attrs.get('failed', 'N/A')} "
-            f"of {var_data.attrs.get('attempted', 'N/A')} attempts."
+            f"{var_data.attrs.get('failed', 'N/A')} / "
+            f"{var_data.attrs.get('attempted', 'N/A')}"
         )
 
         fig = go.Figure()
@@ -1216,7 +1232,8 @@ elif page == "Risk Management":
                 x=var_data.index,
                 y=var_data["Actual Return"],
                 mode="lines",
-                name="Actual Return"
+                name="Actual Return",
+                line=dict(color="#42CFC0", width=1)
             )
         )
 
@@ -1225,7 +1242,8 @@ elif page == "Risk Management":
                 x=var_data.index,
                 y=-var_data["VaR"],
                 mode="lines",
-                name="Negative VaR Threshold"
+                name="VaR Threshold",
+                line=dict(color="#E4A45B", width=1.5)
             )
         )
 
@@ -1265,7 +1283,6 @@ elif page == "Model Stability & Calibration":
     if st.button("Run Stability Analysis"):
 
         try:
-
             with st.spinner("Estimating rolling parameters..."):
 
                 estimates, summary = rolling_parameter_stability(
@@ -1282,7 +1299,6 @@ elif page == "Model Stability & Calibration":
             st.success("Stability analysis completed.")
 
         except Exception as error:
-
             show_error(error)
 
     if st.session_state.stability_estimates is not None:
@@ -1293,7 +1309,8 @@ elif page == "Model Stability & Calibration":
 
         st.dataframe(
             st.session_state.stability_summary,
-            use_container_width=True
+            use_container_width=True,
+            height=220
         )
 
         parameters = [
@@ -1315,7 +1332,8 @@ elif page == "Model Stability & Calibration":
                     x=estimates.index,
                     y=estimates[selected],
                     mode="lines+markers",
-                    name=selected
+                    name=selected,
+                    line=dict(color="#42CFC0")
                 )
             )
 
@@ -1333,7 +1351,6 @@ elif page == "Model Stability & Calibration":
         if st.button("Run PIT Diagnostics"):
 
             try:
-
                 pit, summary = student_t_pit(result)
 
                 st.session_state.pit_values = pit
@@ -1342,7 +1359,6 @@ elif page == "Model Stability & Calibration":
                 st.success("PIT diagnostics completed.")
 
             except Exception as error:
-
                 show_error(error)
 
         if st.session_state.pit_summary is not None:
@@ -1351,28 +1367,9 @@ elif page == "Model Stability & Calibration":
 
             c1, c2, c3 = st.columns(3)
 
-            c1.metric(
-                "KS Statistic",
-                f"{summary['KS Statistic']:.4f}"
-            )
-
-            c2.metric(
-                "KS P-value",
-                f"{summary['KS P-value']:.4f}"
-            )
-
-            c3.metric(
-                "PIT Mean",
-                f"{summary['PIT Mean']:.4f}"
-            )
-
-            st.dataframe(
-                pd.DataFrame(
-                    list(summary.items()),
-                    columns=["Statistic", "Value"]
-                ),
-                use_container_width=True
-            )
+            c1.metric("KS Statistic", f"{summary['KS Statistic']:.4f}")
+            c2.metric("KS P-value", f"{summary['KS P-value']:.4f}")
+            c3.metric("PIT Mean", f"{summary['PIT Mean']:.4f}")
 
             fig = go.Figure()
 
@@ -1380,7 +1377,8 @@ elif page == "Model Stability & Calibration":
                 go.Histogram(
                     x=st.session_state.pit_values,
                     nbinsx=20,
-                    name="PIT"
+                    name="PIT",
+                    marker_color="#42CFC0"
                 )
             )
 
@@ -1395,7 +1393,6 @@ elif page == "Model Stability & Calibration":
             )
 
     else:
-
         st.info("PIT diagnostic requires Student-t innovations.")
 
 
@@ -1408,8 +1405,8 @@ elif page == "Forecast Comparison":
     st.header("Forecast Comparison")
 
     st.write(
-        "Compare your selected volatility model against the "
-        "RiskMetrics-style EWMA benchmark."
+        "Compare your selected volatility model against "
+        "the RiskMetrics-style EWMA benchmark."
     )
 
     window = st.number_input(
@@ -1432,7 +1429,6 @@ elif page == "Forecast Comparison":
     if st.button("Run Forecast Comparison"):
 
         try:
-
             with st.spinner("Comparing volatility forecasts..."):
 
                 model_forecast = rolling_forecast(
@@ -1512,54 +1508,59 @@ elif page == "Forecast Comparison":
             st.success("Forecast comparison completed.")
 
         except Exception as error:
-
             show_error(error)
 
     if st.session_state.forecast_comparison is not None:
 
         comparison = st.session_state.forecast_comparison
 
-        st.subheader("Forecast Performance")
-
-        c1, c2 = st.columns(2)
+        c1, c2, c3 = st.columns(3)
 
         c1.metric(
-            f"{st.session_state.selected_model} QLIKE",
-            f"{comparison['Model QLIKE']:.6f}"
+            "Model QLIKE",
+            f"{comparison['Model QLIKE']:.5f}"
         )
 
         c2.metric(
             "EWMA QLIKE",
-            f"{comparison['EWMA QLIKE']:.6f}"
+            f"{comparison['EWMA QLIKE']:.5f}"
         )
-
-        c3, c4 = st.columns(2)
 
         c3.metric(
+            "Forecasts",
+            comparison["Forecast Count"]
+        )
+
+        c1, c2 = st.columns(2)
+
+        c1.metric(
             "Model MSE",
-            f"{comparison['Model MSE']:.6f}"
+            f"{comparison['Model MSE']:.5f}"
         )
 
-        c4.metric(
+        c2.metric(
             "EWMA MSE",
-            f"{comparison['EWMA MSE']:.6f}"
+            f"{comparison['EWMA MSE']:.5f}"
         )
 
-        st.subheader("Diebold-Mariano QLIKE Test")
+        st.subheader("Diebold-Mariano Tests")
 
-        dm = comparison["DM QLIKE"]
+        dm1 = comparison["DM QLIKE"]
+        dm2 = comparison["DM MSE"]
 
-        st.write(f"Statistic: {dm['DM Statistic']:.4f}")
-        st.write(f"P-value: {dm['P-value']:.4f}")
-        st.write(f"Lower average loss: {dm['Lower Average Loss']}")
+        test_cols = st.columns(2)
 
-        st.subheader("Diebold-Mariano MSE Test")
+        with test_cols[0]:
+            st.markdown("**QLIKE**")
+            st.write(f"Statistic: {dm1['DM Statistic']:.4f}")
+            st.write(f"P-value: {dm1['P-value']:.4f}")
+            st.write(f"Lower loss: {dm1['Lower Average Loss']}")
 
-        dm = comparison["DM MSE"]
-
-        st.write(f"Statistic: {dm['DM Statistic']:.4f}")
-        st.write(f"P-value: {dm['P-value']:.4f}")
-        st.write(f"Lower average loss: {dm['Lower Average Loss']}")
+        with test_cols[1]:
+            st.markdown("**MSE**")
+            st.write(f"Statistic: {dm2['DM Statistic']:.4f}")
+            st.write(f"P-value: {dm2['P-value']:.4f}")
+            st.write(f"Lower loss: {dm2['Lower Average Loss']}")
 
         common = st.session_state.comparison_forecasts
 
@@ -1570,7 +1571,8 @@ elif page == "Forecast Comparison":
                 x=common.index,
                 y=common["Forecast Volatility"],
                 mode="lines",
-                name="Selected Model"
+                name="Selected Model",
+                line=dict(color="#42CFC0")
             )
         )
 
@@ -1579,7 +1581,8 @@ elif page == "Forecast Comparison":
                 x=common.index,
                 y=common["EWMA Volatility"],
                 mode="lines",
-                name="EWMA"
+                name="EWMA",
+                line=dict(color="#E4A45B")
             )
         )
 
@@ -1589,7 +1592,7 @@ elif page == "Forecast Comparison":
         )
 
         st.caption(
-            "Squared returns are used as a noisy realized variance proxy. "
+            "Squared returns are a noisy realized variance proxy. "
             "A negative DM mean loss difference favors the selected model."
         )
 
