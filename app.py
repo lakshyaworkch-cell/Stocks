@@ -229,10 +229,21 @@ def build_rolling_var(
                 distribution="t"
             )
 
-            risk = student_t_risk(
-                result,
-                confidence=confidence
-            )
+            one_day_forecast = result.forecast(
+    horizon=1,
+    method="analytic",
+    reindex=False
+)
+
+next_variance = float(
+    one_day_forecast.variance.iloc[-1, 0]
+)
+
+risk = student_t_risk(
+    result,
+    confidence=confidence,
+    forecast_variance=next_variance
+)
 
             records.append({
                 "Date": returns.index[i],
