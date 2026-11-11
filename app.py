@@ -480,9 +480,7 @@ st.caption(
     "Statistical significance does not automatically imply "
     "that the model is unsuitable."
 )
-
-
-    diagnostics = get_diagnostics(result)
+  diagnostics = get_diagnostics(result)
 
     diag_df = pd.DataFrame(
         diagnostics.items(),
