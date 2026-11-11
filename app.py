@@ -40,6 +40,126 @@ listed on Euronext Amsterdam.
 
 st.divider()
 
+# ==========================================
+# CUSTOM DARK QUANT TERMINAL DESIGN
+# ==========================================
+
+st.markdown("""
+<style>
+
+/* Main application */
+.stApp {
+    background-color: #0B1120;
+    color: #E5EAF3;
+}
+
+/* Main content spacing */
+.block-container {
+    padding-top: 2rem;
+    padding-bottom: 3rem;
+    max-width: 1450px;
+}
+
+/* Main headings */
+h1, h2, h3 {
+    color: #F1F5F9 !important;
+    font-weight: 650 !important;
+    letter-spacing: -0.5px;
+}
+
+/* Paragraphs */
+p, label, span {
+    color: #CBD5E1;
+}
+
+/* Sidebar */
+section[data-testid="stSidebar"] {
+    background-color: #101A2B;
+    border-right: 1px solid #25334A;
+}
+
+/* Metric cards */
+div[data-testid="stMetric"] {
+    background: #151F32;
+    border: 1px solid #293951;
+    padding: 18px;
+    border-radius: 12px;
+}
+
+/* Metric values */
+div[data-testid="stMetricValue"] {
+    color: #00D4AA;
+    font-weight: 700;
+}
+
+/* Buttons */
+.stButton > button {
+    background-color: #00A88F;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    padding: 0.55rem 1rem;
+}
+
+.stButton > button:hover {
+    background-color: #00C6A5;
+    color: white;
+}
+
+/* Download buttons */
+.stDownloadButton > button {
+    background-color: #17263C;
+    color: #00D4AA;
+    border: 1px solid #00A88F;
+    border-radius: 8px;
+}
+
+/* Tables */
+div[data-testid="stDataFrame"] {
+    border: 1px solid #293951;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+/* Input fields */
+.stSelectbox, .stDateInput, .stSlider {
+    margin-bottom: 12px;
+}
+
+/* Tabs */
+button[data-baseweb="tab"] {
+    color: #94A3B8;
+    font-weight: 600;
+}
+
+button[data-baseweb="tab"][aria-selected="true"] {
+    color: #00D4AA;
+}
+
+/* Dividers */
+hr {
+    border-color: #293951;
+}
+
+/* Information messages */
+div[data-testid="stAlert"] {
+    border-radius: 10px;
+}
+
+/* Hide Streamlit branding */
+#MainMenu {
+    visibility: hidden;
+}
+
+footer {
+    visibility: hidden;
+}
+
+</style>
+""", unsafe_allow_html=True)
+
+
 
 # -------------------------------
 # SIDEBAR
@@ -262,7 +382,105 @@ if run_analysis:
     # MODEL DIAGNOSTICS
     # -------------------------------
 
-    st.header("6. Model Diagnostics")
+    
+# ==========================================
+# 6. MODEL DIAGNOSTICS
+# ==========================================
+
+st.header("6. Model Diagnostics")
+
+diagnostics = get_diagnostics(result)
+
+
+def pvalue_status(p):
+    if p < 0.05:
+        return "Significant"
+    return "Not significant"
+
+
+# Four compact diagnostic cards
+c1, c2, c3, c4 = st.columns(4)
+
+c1.metric(
+    "Ljung-Box (10)",
+    f"{diagnostics['Ljung-Box p-value (10)']:.4f}",
+    help="Tests residual autocorrelation."
+)
+
+c2.metric(
+    "Ljung-Box (20)",
+    f"{diagnostics['Ljung-Box p-value (20)']:.4f}",
+    help="Tests residual autocorrelation at 20 lags."
+)
+
+c3.metric(
+    "ARCH LM",
+    f"{diagnostics['ARCH LM p-value']:.4f}",
+    help="Tests remaining ARCH effects."
+)
+
+c4.metric(
+    "Jarque-Bera",
+    f"{diagnostics['Jarque-Bera p-value']:.4f}",
+    help="Tests normality of standardized residuals."
+)
+
+st.markdown("### Statistical Diagnostic Results")
+
+diagnostic_table = pd.DataFrame([
+    {
+        "Test": "Ljung-Box (10)",
+        "Null Hypothesis": "No residual autocorrelation",
+        "Statistic": np.nan,
+        "P-value": diagnostics["Ljung-Box p-value (10)"]
+    },
+    {
+        "Test": "Ljung-Box (20)",
+        "Null Hypothesis": "No residual autocorrelation",
+        "Statistic": np.nan,
+        "P-value": diagnostics["Ljung-Box p-value (20)"]
+    },
+    {
+        "Test": "ARCH LM",
+        "Null Hypothesis": "No remaining ARCH effects",
+        "Statistic": np.nan,
+        "P-value": diagnostics["ARCH LM p-value"]
+    },
+    {
+        "Test": "Jarque-Bera",
+        "Null Hypothesis": "Residuals are normally distributed",
+        "Statistic": diagnostics["Jarque-Bera statistic"],
+        "P-value": diagnostics["Jarque-Bera p-value"]
+    }
+])
+
+diagnostic_table["Result"] = diagnostic_table["P-value"].apply(
+    pvalue_status
+)
+
+st.dataframe(
+    diagnostic_table,
+    use_container_width=True,
+    hide_index=True,
+    column_config={
+        "Statistic": st.column_config.NumberColumn(
+            "Test Statistic",
+            format="%.4f"
+        ),
+        "P-value": st.column_config.NumberColumn(
+            "P-value",
+            format="%.4f"
+        )
+    }
+)
+
+st.caption(
+    "Interpretation: A p-value below 0.05 indicates "
+    "evidence against the respective null hypothesis. "
+    "Statistical significance does not automatically imply "
+    "that the model is unsuitable."
+)
+
 
     diagnostics = get_diagnostics(result)
 
