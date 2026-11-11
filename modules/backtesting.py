@@ -1,168 +1,146 @@
+
 import numpy as np
 import pandas as pd
 
 from scipy.stats import chi2
+from scipy.special import xlogy
 
 
-def _safe_log(value):
-    return np.log(max(float(value), 1e-12))
+def _lr_statistic(log_likelihood_null, log_likelihood_alt):
+    """Calculate a non-negative likelihood-ratio statistic."""
+    return max(
+        0.0,
+        2.0 * (log_likelihood_alt - log_likelihood_null)
+    )
 
 
 def var_backtests(returns, var, confidence=0.95):
     """
-    Backtest VaR forecasts.
+    Kupiec unconditional coverage test,
+    Christoffersen independence test,
+    and conditional coverage test.
 
-    Parameters
-    ----------
-    returns : pandas.Series or array
-        Actual returns in percentage units.
-    var : pandas.Series or array
-        Positive VaR loss forecasts in percentage units.
-        Must be aligned with returns.
-    confidence : float
-        VaR confidence level, e.g. 0.95.
-
-    An exception occurs when:
-        return < -VaR
-
-    Returns
-    -------
-    dict
-        Backtesting statistics and p-values.
+    returns: actual returns in percentage units.
+    var: positive VaR loss forecasts in percentage units.
+    Both inputs must be chronologically aligned.
     """
 
     if not 0 < confidence < 1:
         raise ValueError("Confidence must be between 0 and 1.")
 
-    returns = pd.Series(returns).astype(float)
-    var = pd.Series(var).astype(float)
+    returns = pd.Series(returns, dtype=float)
+    var = pd.Series(var, dtype=float)
 
-    if isinstance(returns.index, pd.RangeIndex):
-        returns = returns.reset_index(drop=True)
-
-    if isinstance(var.index, pd.RangeIndex):
-        var = var.reset_index(drop=True)
-
-    aligned = pd.concat(
-        [
-            returns.rename("returns"),
-            var.rename("var")
-        ],
-        axis=1
-    ).dropna()
+    if returns.index.equals(var.index):
+        aligned = pd.DataFrame({
+            "returns": returns,
+            "var": var
+        }).dropna()
+    else:
+        aligned = pd.concat(
+            [returns.rename("returns"), var.rename("var")],
+            axis=1,
+            join="inner"
+        ).dropna()
 
     aligned = aligned.replace(
-        [np.inf, -np.inf],
-        np.nan
+        [np.inf, -np.inf], np.nan
     ).dropna()
 
     if len(aligned) < 30:
-        raise ValueError(
-            "At least 30 aligned observations are required."
-        )
+        raise ValueError("At least 30 aligned observations are required.")
 
-    if (aligned["var"] < 0).any():
-        raise ValueError(
-            "VaR values must be positive loss amounts."
-        )
+    if (aligned["var"] <= 0).any():
+        raise ValueError("VaR forecasts must be positive loss amounts.")
 
     actual = aligned["returns"].to_numpy()
     predicted_var = aligned["var"].to_numpy()
 
-    violations = (
+    # A violation occurs when actual loss exceeds predicted VaR.
+    exceptions = (
         actual < -predicted_var
     ).astype(int)
 
-    n = len(violations)
-    exceptions = int(violations.sum())
+    n = len(exceptions)
+    x = int(exceptions.sum())
 
-    expected_rate = 1 - confidence
-    observed_rate = exceptions / n
+    p0 = 1.0 - confidence
+    phat = x / n
 
-    # Kupiec unconditional coverage test
-    if exceptions == 0 or exceptions == n:
-        lr_uc = 0.0 if exceptions == 0 else np.inf
-        p_uc = 1.0 if exceptions == 0 else 0.0
-    else:
-        likelihood_null = (
-            (1 - expected_rate) ** (n - exceptions)
-            * expected_rate ** exceptions
-        )
+    # 1. Kupiec unconditional coverage
+    ll_null = (
+        xlogy(x, p0)
+        + xlogy(n - x, 1.0 - p0)
+    )
 
-        likelihood_alt = (
-            (1 - observed_rate) ** (n - exceptions)
-            * observed_rate ** exceptions
-        )
+    ll_alt = (
+        xlogy(x, phat)
+        + xlogy(n - x, 1.0 - phat)
+    )
 
-        lr_uc = -2 * (
-            _safe_log(likelihood_null)
-            - _safe_log(likelihood_alt)
-        )
+    lr_uc = _lr_statistic(ll_null, ll_alt)
+    p_uc = float(chi2.sf(lr_uc, df=1))
 
-        p_uc = float(chi2.sf(lr_uc, df=1))
+    # 2. Christoffersen independence
+    previous = exceptions[:-1]
+    current = exceptions[1:]
 
-    # Christoffersen independence test
-    n00 = n01 = n10 = n11 = 0
+    n00 = int(((previous == 0) & (current == 0)).sum())
+    n01 = int(((previous == 0) & (current == 1)).sum())
+    n10 = int(((previous == 1) & (current == 0)).sum())
+    n11 = int(((previous == 1) & (current == 1)).sum())
 
-    for previous, current in zip(
-        violations[:-1],
-        violations[1:]
-    ):
-        if previous == 0 and current == 0:
-            n00 += 1
-        elif previous == 0 and current == 1:
-            n01 += 1
-        elif previous == 1 and current == 0:
-            n10 += 1
-        else:
-            n11 += 1
+    transitions = len(current)
 
     total_0 = n00 + n01
     total_1 = n10 + n11
 
-    p01 = n01 / total_0 if total_0 > 0 else 0.0
-    p11 = n11 / total_1 if total_1 > 0 else 0.0
+    total_exceptions = n01 + n11
+    p_all = total_exceptions / transitions
 
-    total_transitions = n00 + n01 + n10 + n11
+    p01 = n01 / total_0 if total_0 else 0.0
+    p11 = n11 / total_1 if total_1 else 0.0
 
-    p_all = (
-        (n01 + n11) / total_transitions
-        if total_transitions > 0
-        else 0.0
+    ll_ind_null = (
+        xlogy(total_exceptions, p_all)
+        + xlogy(transitions - total_exceptions, 1.0 - p_all)
     )
 
-    log_likelihood_null = (
-        (n00 + n10) * _safe_log(1 - p_all)
-        + (n01 + n11) * _safe_log(p_all)
+    ll_ind_alt = (
+        xlogy(n01, p01)
+        + xlogy(n00, 1.0 - p01)
+        + xlogy(n11, p11)
+        + xlogy(n10, 1.0 - p11)
     )
 
-    log_likelihood_alt = (
-        n00 * _safe_log(1 - p01)
-        + n01 * _safe_log(p01)
-        + n10 * _safe_log(1 - p11)
-        + n11 * _safe_log(p11)
-    )
-
-    lr_ind = max(
-        0.0,
-        -2 * (log_likelihood_null - log_likelihood_alt)
-    )
-
+    lr_ind = _lr_statistic(ll_ind_null, ll_ind_alt)
     p_ind = float(chi2.sf(lr_ind, df=1))
 
-    # Conditional coverage test
+    # 3. Conditional coverage
     lr_cc = lr_uc + lr_ind
     p_cc = float(chi2.sf(lr_cc, df=2))
 
     return {
-        "Observations": int(n),
-        "Exceptions": exceptions,
-        "Expected Exception Rate": float(expected_rate),
-        "Observed Exception Rate": float(observed_rate),
-        "Kupiec LR Statistic": float(lr_uc),
-        "Kupiec P-value": float(p_uc),
-        "Christoffersen Independence LR": float(lr_ind),
-        "Christoffersen Independence P-value": float(p_ind),
-        "Conditional Coverage LR": float(lr_cc),
-        "Conditional Coverage P-value": float(p_cc)
+        "Observations": n,
+        "Exceptions": x,
+        "Expected Exception Rate": p0,
+        "Observed Exception Rate": phat,
+        "Kupiec LR Statistic": lr_uc,
+        "Kupiec P-value": p_uc,
+        "Christoffersen Independence LR": lr_ind,
+        "Christoffersen Independence P-value": p_ind,
+        "Conditional Coverage LR": lr_cc,
+        "Conditional Coverage P-value": p_cc,
+        "Kupiec Result": (
+            "Do not reject coverage"
+            if p_uc >= 0.05 else "Reject coverage"
+        ),
+        "Independence Result": (
+            "Do not reject independence"
+            if p_ind >= 0.05 else "Reject independence"
+        ),
+        "Conditional Coverage Result": (
+            "Do not reject conditional coverage"
+            if p_cc >= 0.05 else "Reject conditional coverage"
+        )
     }
