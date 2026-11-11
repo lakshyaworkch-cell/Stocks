@@ -38,25 +38,21 @@ st.set_page_config(
 st.markdown("""
 <style>
 
-/* Main background */
 .stApp {
     background-color: #0B1923;
     color: #E1F1F0;
 }
 
-/* Main content spacing - FIXED */
 .block-container {
     padding-top: 4.5rem !important;
     padding-bottom: 1.5rem;
     max-width: 1500px;
 }
 
-/* Keep Streamlit header above page content */
 [data-testid="stHeader"] {
     z-index: 999;
 }
 
-/* Sidebar */
 [data-testid="stSidebar"] {
     background-color: #102630;
     border-right: 1px solid #21434B;
@@ -66,7 +62,6 @@ st.markdown("""
     color: #D9EEEE;
 }
 
-/* Headings */
 h1, h2, h3 {
     color: #E1F1F0 !important;
     letter-spacing: -0.3px;
@@ -84,12 +79,10 @@ h3 {
     font-size: 1.05rem !important;
 }
 
-/* Paragraphs */
 p, label {
     color: #B5CFD0;
 }
 
-/* Compact metric cards */
 div[data-testid="stMetric"] {
     background: #12313A;
     border: 1px solid #24515A;
@@ -98,30 +91,25 @@ div[data-testid="stMetric"] {
     min-height: 0;
 }
 
-/* Metric labels */
 div[data-testid="stMetricLabel"] {
     color: #9ABDC0 !important;
     font-size: 0.76rem !important;
 }
 
-/* Metric values */
 div[data-testid="stMetricValue"] {
     color: #5DE0CF !important;
     font-size: 1.35rem !important;
     font-weight: 700;
 }
 
-/* Metric delta */
 div[data-testid="stMetricDelta"] {
     font-size: 0.72rem !important;
 }
 
-/* Reduce vertical gaps between elements */
 div[data-testid="stVerticalBlock"] {
     gap: 0.75rem;
 }
 
-/* Buttons */
 div.stButton > button {
     background: #167C78;
     color: #FFFFFF;
@@ -138,21 +126,18 @@ div.stButton > button:hover {
     border-color: #5DE0CF;
 }
 
-/* Inputs */
 div[data-baseweb="select"] > div,
 div[data-baseweb="input"] > div {
     background-color: #16323B;
     border-color: #31545C;
 }
 
-/* Dataframes */
 [data-testid="stDataFrame"] {
     border: 1px solid #28505A;
     border-radius: 8px;
     overflow: hidden;
 }
 
-/* Tabs */
 button[data-baseweb="tab"] {
     color: #A9C7C9;
 }
@@ -162,12 +147,10 @@ button[data-baseweb="tab"][aria-selected="true"] {
     border-bottom-color: #36B9A9;
 }
 
-/* Dividers */
 hr {
     border-color: #24444D;
 }
 
-/* Research cards */
 .research-card {
     background: #12313A;
     border: 1px solid #28505A;
@@ -187,7 +170,6 @@ hr {
     font-size: 0.76rem;
 }
 
-/* Compact info panels */
 .compact-panel {
     background: #12313A;
     border: 1px solid #28505A;
@@ -195,7 +177,6 @@ hr {
     padding: 10px 12px;
 }
 
-/* Hide automatic Streamlit navigation */
 [data-testid="stSidebarNav"] {
     display: none !important;
 }
@@ -426,6 +407,34 @@ def make_ewma_forecasts(
 
 
 # ============================================================
+# DAILY RETURN DISPLAY HELPER
+# ============================================================
+
+def show_daily_return(returns, column_number=2):
+
+    valid_returns = pd.Series(returns).dropna()
+
+    if valid_returns.empty:
+        st.metric("Latest Daily Return", "N/A")
+        return
+
+    latest_return = float(valid_returns.iloc[-1])
+    latest_date = valid_returns.index[-1]
+
+    if hasattr(latest_date, "strftime"):
+        date_label = latest_date.strftime("%d %b %Y")
+    else:
+        date_label = str(latest_date)
+
+    st.metric(
+        "Latest Daily Return",
+        f"{latest_return:.2f}%"
+    )
+
+    st.caption(f"Trading date: {date_label}")
+
+
+# ============================================================
 # SINGLE SIDEBAR
 # ============================================================
 
@@ -627,10 +636,8 @@ if page == "Overview":
             f"€{data['Close'].iloc[-1]:,.2f}"
         )
 
-        col2.metric(
-            "Daily Return",
-            f"{returns.iloc[-1]:.2f}%"
-        )
+        with col2:
+            show_daily_return(returns)
 
         col3.metric(
             "Annual Volatility",
@@ -737,8 +744,14 @@ elif page == "Market Data":
 
     c1, c2, c3 = st.columns(3)
 
-    c1.metric("Latest Price", f"€{data['Close'].iloc[-1]:,.2f}")
-    c2.metric("Daily Return", f"{returns.iloc[-1]:.2f}%")
+    c1.metric(
+        "Latest Price",
+        f"€{data['Close'].iloc[-1]:,.2f}"
+    )
+
+    with c2:
+        show_daily_return(returns)
+
     c3.metric(
         "Annual Volatility",
         f"{returns.std() * np.sqrt(252):.2f}%"
@@ -1204,7 +1217,6 @@ elif page == "Risk Management":
 
         if isinstance(backtest, dict):
 
-            # Compact display instead of a large table
             result_items = list(backtest.items())
 
             result_cols = st.columns(min(3, len(result_items)))
