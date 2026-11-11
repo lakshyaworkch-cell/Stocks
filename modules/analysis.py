@@ -181,3 +181,32 @@ def compare_models(returns):
         ascending=True,
         na_position="last"
     ).reset_index(drop=True)
+
+def generate_forecast(result, horizon=5, simulations=10000):
+    """
+    Generate volatility forecasts.
+
+    EGARCH uses simulation for multi-step forecasts.
+    Other models can use analytic forecasts.
+    """
+
+    if horizon < 1:
+        raise ValueError("Forecast horizon must be at least 1.")
+
+    model_name = getattr(result.model.volatility, "name", "")
+
+    if model_name.upper() == "EGARCH" and horizon > 1:
+        forecast = result.forecast(
+            horizon=horizon,
+            method="simulation",
+            simulations=simulations,
+            reindex=False
+        )
+    else:
+        forecast = result.forecast(
+            horizon=horizon,
+            method="analytic",
+            reindex=False
+        )
+
+    return forecast
