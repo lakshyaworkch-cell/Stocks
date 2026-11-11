@@ -1,63 +1,81 @@
-
+import pandas as pd
 import plotly.graph_objects as go
 
 
-def price_chart(df):
+def plot_price(data):
+    """Plot historical closing prices."""
+
     fig = go.Figure()
 
-    fig.add_trace(go.Scatter(
-        x=df.index,
-        y=df["Close"],
-        mode="lines",
-        name="Adjusted Close"
-    ))
+    fig.add_trace(
+        go.Scatter(
+            x=data.index,
+            y=data["Close"],
+            mode="lines",
+            name="Closing Price"
+        )
+    )
 
     fig.update_layout(
         title="Historical Stock Price",
         xaxis_title="Date",
-        yaxis_title="Price (EUR)",
-        template="plotly_white"
+        yaxis_title="Price",
+        template="plotly_dark",
+        height=450
     )
 
     return fig
 
 
-def returns_chart(df):
+def plot_returns(returns):
+    """Plot daily percentage log returns."""
+
     fig = go.Figure()
 
-    fig.add_trace(go.Scatter(
-        x=df.index,
-        y=df["Returns"],
-        mode="lines",
-        name="Daily Log Returns"
-    ))
+    fig.add_trace(
+        go.Scatter(
+            x=returns.index,
+            y=returns,
+            mode="lines",
+            name="Daily Returns"
+        )
+    )
 
     fig.update_layout(
         title="Daily Log Returns",
         xaxis_title="Date",
         yaxis_title="Return (%)",
-        template="plotly_dark"
+        template="plotly_dark",
+        height=400
     )
 
     return fig
 
 
-def volatility_chart(result):
+def plot_volatility(result):
+    """Plot fitted conditional volatility."""
+
+    volatility = pd.Series(
+        result.conditional_volatility
+    )
+
     fig = go.Figure()
 
-    fig.add_trace(go.Scatter(
-        x=result.conditional_volatility.index,
-        y=result.conditional_volatility,
-        mode="lines",
-        name="EGARCH Volatility"
-    ))
+    fig.add_trace(
+        go.Scatter(
+            x=volatility.index,
+            y=volatility,
+            mode="lines",
+            name="Conditional Volatility"
+        )
+    )
 
     fig.update_layout(
-        title="EGARCH Conditional Volatility",
+        title="Conditional Volatility",
         xaxis_title="Date",
         yaxis_title="Volatility (%)",
-        template="plotly_dark"
+        template="plotly_dark",
+        height=400
     )
 
     return fig
-
