@@ -135,4 +135,3 @@ def christoffersen_independence_test(returns, var):
         "Transition 10": n10,
         "Transition 11": n11
     }
-
