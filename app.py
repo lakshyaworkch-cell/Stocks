@@ -9,27 +9,11 @@ from datetime import date, timedelta
 from modules.data import DUTCH_STOCKS, get_stock_data
 from modules.preprocessing import calculate_returns
 from modules.stationarity import stationarity_tests
-
-from modules.analysis import (
-    fit_model,
-    compare_models,
-    get_parameters
-)
-
+from modules.analysis import fit_model, compare_models, get_parameters
 from modules.diagnostics import get_diagnostics
-
-from modules.forecasting import (
-    rolling_forecast,
-    evaluate_forecasts
-)
-
-from modules.risk import (
-    student_t_risk,
-    historical_risk
-)
-
+from modules.forecasting import rolling_forecast, evaluate_forecasts
+from modules.risk import student_t_risk, historical_risk
 from modules.backtesting import var_backtests
-
 from modules.stability import rolling_parameter_stability
 from modules.pit_diagnostics import student_t_pit
 from modules.forecast_tests import diebold_mariano_test
@@ -40,7 +24,7 @@ from modules.forecast_tests import diebold_mariano_test
 # ============================================================
 
 st.set_page_config(
-    page_title="Dutch Quant | Quantitative Research",
+    page_title="Dutch Quant | Research Terminal",
     page_icon="📈",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -48,28 +32,37 @@ st.set_page_config(
 
 
 # ============================================================
-# CUSTOM DARK THEME
+# VISUAL DESIGN
 # ============================================================
 
 st.markdown("""
 <style>
     .stApp {
-        background-color: #0b1120;
+        background: #0b1220;
         color: #e5e7eb;
     }
 
     [data-testid="stSidebar"] {
-        background-color: #111827;
+        background: #111b2e;
+        border-right: 1px solid #26364d;
+    }
+
+    [data-testid="stSidebar"] * {
+        color: #e5e7eb;
     }
 
     h1, h2, h3 {
-        color: #f8fafc;
+        color: #f8fafc !important;
+    }
+
+    p, label {
+        color: #cbd5e1;
     }
 
     div[data-testid="stMetric"] {
-        background-color: #172033;
-        border: 1px solid #263449;
-        padding: 15px;
+        background: #17243a;
+        border: 1px solid #2b3b54;
+        padding: 16px;
         border-radius: 10px;
     }
 
@@ -81,216 +74,214 @@ st.markdown("""
         color: #38bdf8;
     }
 
-    .main-header {
+    div.stButton > button {
+        border-radius: 8px;
+        font-weight: 600;
+        min-height: 42px;
+    }
+
+    .main-title {
         font-size: 36px;
         font-weight: 800;
         color: #38bdf8;
         margin-bottom: 0;
     }
 
-    .sub-header {
+    .subtitle {
+        font-size: 14px;
         color: #94a3b8;
-        font-size: 15px;
-        margin-top: 4px;
+        margin-top: 5px;
+    }
+
+    .section-label {
+        color: #38bdf8;
+        font-weight: 700;
+        letter-spacing: 1px;
+    }
+
+    .research-card {
+        background: #17243a;
+        border: 1px solid #2b3b54;
+        border-radius: 10px;
+        padding: 18px;
+        margin-bottom: 12px;
     }
 
     hr {
-        border-color: #263449;
+        border-color: #26364d;
     }
 </style>
 """, unsafe_allow_html=True)
 
 
 # ============================================================
-# HEADER
-# ============================================================
-
-st.markdown(
-    '<p class="main-header">DUTCH QUANT</p>',
-    unsafe_allow_html=True
-)
-
-st.markdown(
-    '<p class="sub-header">'
-    'Quantitative Financial Research | Volatility Modelling | Risk Analytics'
-    '</p>',
-    unsafe_allow_html=True
-)
-
-st.divider()
-
-
-# ============================================================
 # SESSION STATE
 # ============================================================
 
-SESSION_DEFAULTS = {
+DEFAULTS = {
     "stock_data": None,
     "returns": None,
     "model_result": None,
     "model_parameters": None,
     "diagnostics": None,
     "forecast_result": None,
+
+    "selected_company": None,
     "selected_ticker": None,
     "selected_model": None,
     "selected_distribution": None,
+
+    "analysis_start": None,
+    "analysis_end": None,
+    "analysis_horizon": 5,
+
     "model_comparison": None,
     "rolling_forecasts": None,
     "forecast_evaluation": None,
-    "forecast_comparison": None,
+
     "stability_estimates": None,
     "stability_summary": None,
+
     "pit_values": None,
     "pit_summary": None,
+
+    "forecast_comparison": None,
+    "comparison_forecasts": None,
+
     "var_forecasts": None,
     "var_backtest_results": None,
+
     "portfolio_returns": None,
     "portfolio_series": None,
 }
 
-for key, default in SESSION_DEFAULTS.items():
+for key, value in DEFAULTS.items():
     if key not in st.session_state:
-        st.session_state[key] = default
+        st.session_state[key] = value
 
 
 # ============================================================
 # HELPER FUNCTIONS
 # ============================================================
 
-def make_volatility_forecast(
-    result,
-    horizon,
-    model_name,
-    simulations=10000
-):
+def clear_old_results():
+    keys = [
+        "model_comparison",
+        "rolling_forecasts",
+        "forecast_evaluation",
+        "stability_estimates",
+        "stability_summary",
+        "pit_values",
+        "pit_summary",
+        "forecast_comparison",
+        "comparison_forecasts",
+        "var_forecasts",
+        "var_backtest_results",
+        "portfolio_returns",
+        "portfolio_series"
+    ]
+
+    for key in keys:
+        st.session_state[key] = None
+
+
+def make_chart(fig, title, y_title, height=420):
+    fig.update_layout(
+        title=title,
+        template="plotly_dark",
+        paper_bgcolor="#0b1220",
+        plot_bgcolor="#111b2e",
+        font=dict(color="#e5e7eb"),
+        xaxis_title="Date",
+        yaxis_title=y_title,
+        height=height,
+        margin=dict(l=25, r=25, t=60, b=25)
+    )
+    return fig
+
+
+def show_error(error):
+    st.error(f"Error: {error}")
+
+
+def make_volatility_forecast(result, horizon, model_name):
     """
-    Generate conditional variance forecasts.
-
-    EGARCH does not support analytic forecasts for horizons
-    greater than one in the arch package.
-
-    EGARCH with horizon > 1 uses simulation.
-    Other cases use analytic forecasts.
+    EGARCH requires simulation for multi-step forecasts.
     """
-
-    if horizon < 1:
-        raise ValueError("Forecast horizon must be at least 1.")
 
     if model_name.upper() == "EGARCH" and horizon > 1:
-
-        forecast = result.forecast(
+        return result.forecast(
             horizon=horizon,
             method="simulation",
-            simulations=simulations,
+            simulations=10000,
             reindex=False
         )
 
-    else:
-
-        forecast = result.forecast(
-            horizon=horizon,
-            method="analytic",
-            reindex=False
-        )
-
-    return forecast
+    return result.forecast(
+        horizon=horizon,
+        method="analytic",
+        reindex=False
+    )
 
 
-def build_rolling_var(
-    returns,
-    confidence=0.95,
-    window=500
-):
-    """
-    Chronological one-step-ahead EGARCH Student-t VaR forecasts.
-
-    Each model is estimated using only observations available
-    before the forecast date.
-    """
+def build_rolling_var(returns, confidence=0.95, window=500):
 
     returns = pd.Series(returns).dropna().astype(float)
 
     if len(returns) <= window:
-        raise ValueError(
-            "There are not enough observations for rolling VaR."
-        )
+        raise ValueError("Insufficient observations for rolling VaR.")
 
     records = []
     failed = 0
 
     for i in range(window, len(returns)):
 
-        training_data = returns.iloc[i-window:i]
+        train = returns.iloc[i-window:i]
 
         try:
-
             fitted = fit_model(
-                training_data,
+                train,
                 model_name="EGARCH",
                 distribution="t"
             )
 
-            one_day_forecast = fitted.forecast(
+            forecast = fitted.forecast(
                 horizon=1,
                 method="analytic",
                 reindex=False
             )
 
-            next_variance = float(
-                one_day_forecast.variance.iloc[-1, 0]
-            )
+            variance = float(forecast.variance.iloc[-1, 0])
 
             risk = student_t_risk(
                 fitted,
                 confidence=confidence,
-                forecast_variance=next_variance
+                forecast_variance=variance
             )
 
             records.append({
                 "Date": returns.index[i],
                 "Actual Return": float(returns.iloc[i]),
                 "VaR": risk["VaR"],
-                "ES": risk["ES"],
-                "Forecast Volatility": risk["Forecast Volatility"]
+                "ES": risk["ES"]
             })
 
         except Exception:
             failed += 1
-            continue
 
     if not records:
-        raise RuntimeError(
-            "Rolling VaR estimation failed for every forecast date."
-        )
+        raise RuntimeError("No valid rolling VaR forecasts.")
 
     output = pd.DataFrame(records).set_index("Date")
-
     output.attrs["attempted"] = len(returns) - window
     output.attrs["failed"] = failed
 
     return output
 
 
-def make_ewma_forecasts(
-    returns,
-    forecast_index,
-    window=750,
-    decay=0.94
-):
-    """
-    Produce one-step-ahead RiskMetrics-style EWMA variance forecasts.
-
-    Variance recursion:
-        sigma2_t = lambda * sigma2_(t-1)
-                   + (1-lambda) * r_(t-1)^2
-
-    Only past returns are used for each forecast.
-    """
+def make_ewma_forecasts(returns, forecast_index, window=750, decay=0.94):
 
     returns = pd.Series(returns).dropna().astype(float)
-
-    if not 0 < decay < 1:
-        raise ValueError("EWMA decay must be between 0 and 1.")
 
     records = []
 
@@ -304,18 +295,15 @@ def make_ewma_forecasts(
         if position < window:
             continue
 
-        training = returns.iloc[position-window:position]
+        train = returns.iloc[position-window:position]
 
-        initial_count = min(30, len(training))
-
-        variance = float(
-            training.iloc[:initial_count].var(ddof=1)
-        )
+        initial_count = min(30, len(train))
+        variance = float(train.iloc[:initial_count].var(ddof=1))
 
         if not np.isfinite(variance) or variance <= 0:
             continue
 
-        for observation in training.iloc[initial_count:]:
+        for observation in train.iloc[initial_count:]:
             variance = (
                 decay * variance
                 + (1 - decay) * float(observation) ** 2
@@ -330,65 +318,118 @@ def make_ewma_forecasts(
             })
 
     if not records:
-        raise RuntimeError("No valid EWMA forecasts were generated.")
+        raise RuntimeError("No valid EWMA forecasts.")
 
     return pd.DataFrame(records).set_index("Date")
 
 
-def make_chart_layout(fig, title, y_title):
-    fig.update_layout(
-        title=title,
-        template="plotly_dark",
-        paper_bgcolor="#0b1120",
-        plot_bgcolor="#111827",
-        font=dict(color="#e5e7eb"),
-        xaxis_title="Date",
-        yaxis_title=y_title,
-        height=420,
-        margin=dict(l=30, r=30, t=60, b=30)
-    )
+# ============================================================
+# HEADER
+# ============================================================
 
-    return fig
+st.markdown(
+    '<p class="main-title">DUTCH QUANT</p>',
+    unsafe_allow_html=True
+)
 
+st.markdown(
+    '<p class="subtitle">'
+    'QUANTITATIVE RESEARCH TERMINAL | VOLATILITY | RISK | FORECASTING'
+    '</p>',
+    unsafe_allow_html=True
+)
 
-def show_error(error):
-    st.error(str(error))
-
-
-def clear_analysis_results():
-    """
-    Clear stored outputs when a new model is estimated.
-    """
-
-    keys = [
-        "model_comparison",
-        "rolling_forecasts",
-        "forecast_evaluation",
-        "forecast_comparison",
-        "stability_estimates",
-        "stability_summary",
-        "pit_values",
-        "pit_summary",
-        "var_forecasts",
-        "var_backtest_results",
-        "portfolio_returns",
-        "portfolio_series"
-    ]
-
-    for key in keys:
-        st.session_state[key] = None
+st.divider()
 
 
 # ============================================================
-# SIDEBAR
+# SIDEBAR: STOCK SELECTION AT THE TOP
 # ============================================================
 
-st.sidebar.title("Dutch Quant")
-st.sidebar.caption("Quantitative Research Platform")
+st.sidebar.markdown("## 📈 DUTCH QUANT")
+st.sidebar.caption("Research Terminal")
+
+st.sidebar.divider()
+
+st.sidebar.markdown("### 1. Market Selection")
+
+company = st.sidebar.selectbox(
+    "Select Stock",
+    list(DUTCH_STOCKS.keys()),
+    key="sidebar_company"
+)
+
+ticker = DUTCH_STOCKS[company]
+
+st.sidebar.info(f"Selected ticker: {ticker}")
+
+st.sidebar.markdown("### 2. Date Range")
+
+today = date.today()
+
+start_date = st.sidebar.date_input(
+    "Start Date",
+    value=today - timedelta(days=365 * 5),
+    min_value=date(2000, 1, 1),
+    max_value=today,
+    key="sidebar_start"
+)
+
+end_date = st.sidebar.date_input(
+    "End Date",
+    value=today,
+    min_value=date(2000, 1, 1),
+    max_value=today,
+    key="sidebar_end"
+)
+
+st.sidebar.markdown("### 3. Model Configuration")
+
+model_name = st.sidebar.selectbox(
+    "Volatility Model",
+    ["EGARCH", "GARCH", "GJR-GARCH"],
+    index=0,
+    key="sidebar_model"
+)
+
+distribution = st.sidebar.selectbox(
+    "Return Distribution",
+    ["t", "normal", "skewt"],
+    index=0,
+    key="sidebar_distribution"
+)
+
+forecast_horizon = st.sidebar.slider(
+    "Forecast Horizon",
+    1,
+    20,
+    5,
+    key="sidebar_horizon"
+)
+
+st.sidebar.caption(
+    "Student-t innovations are a useful starting point "
+    "for modelling heavy-tailed financial returns."
+)
+
+load_button = st.sidebar.button(
+    "🚀 Load Data & Run Analysis",
+    type="primary",
+    use_container_width=True
+)
+
+
+# ============================================================
+# SIDEBAR: NAVIGATION BELOW STOCK SELECTION
+# ============================================================
+
+st.sidebar.divider()
+st.sidebar.markdown("### 4. Research Navigation")
 
 page = st.sidebar.radio(
-    "Navigation",
+    "Select Research Section",
     [
+        "Overview",
         "Market Data",
         "Statistical Analysis",
         "Volatility Models",
@@ -398,70 +439,22 @@ page = st.sidebar.radio(
         "Model Stability & Calibration",
         "Forecast Comparison",
         "Portfolio Analysis"
-    ]
+    ],
+    key="navigation"
 )
 
 st.sidebar.divider()
-st.sidebar.subheader("Analysis Settings")
-
-company = st.sidebar.selectbox(
-    "Select Dutch Stock",
-    list(DUTCH_STOCKS.keys())
-)
-
-ticker = DUTCH_STOCKS[company]
-
-today = date.today()
-default_start = today - timedelta(days=365 * 5)
-
-start_date = st.sidebar.date_input(
-    "Start Date",
-    value=default_start,
-    min_value=date(2000, 1, 1),
-    max_value=today
-)
-
-end_date = st.sidebar.date_input(
-    "End Date",
-    value=today,
-    min_value=date(2000, 1, 1),
-    max_value=today
-)
-
-model_name = st.sidebar.selectbox(
-    "Volatility Model",
-    ["EGARCH", "GARCH", "GJR-GARCH"]
-)
-
-distribution = st.sidebar.selectbox(
-    "Innovation Distribution",
-    ["t", "normal", "skewt"]
-)
-
-forecast_horizon = st.sidebar.slider(
-    "Forecast Horizon (Trading Days)",
-    min_value=1,
-    max_value=20,
-    value=5
-)
 
 st.sidebar.caption(
-    "Student-t innovations are a useful baseline for "
-    "heavy-tailed financial returns."
-)
-
-run_analysis = st.sidebar.button(
-    "Run Analysis",
-    type="primary",
-    use_container_width=True
+    "Dutch Quant | Quantitative Finance Research"
 )
 
 
 # ============================================================
-# DATA DOWNLOAD AND MODEL ESTIMATION
+# RUN ANALYSIS
 # ============================================================
 
-if run_analysis:
+if load_button:
 
     if start_date >= end_date:
 
@@ -471,9 +464,7 @@ if run_analysis:
 
         try:
 
-            clear_analysis_results()
-
-            with st.spinner("Downloading market data..."):
+            with st.spinner("Downloading stock market data..."):
 
                 data = get_stock_data(
                     ticker,
@@ -485,129 +476,269 @@ if run_analysis:
 
             with st.spinner("Estimating volatility model..."):
 
-                fitted_model = fit_model(
+                fitted = fit_model(
                     returns,
                     model_name=model_name,
                     distribution=distribution
                 )
 
-                parameters = get_parameters(fitted_model)
-                diagnostics = get_diagnostics(fitted_model)
+                parameters = get_parameters(fitted)
+                diagnostics = get_diagnostics(fitted)
 
             with st.spinner("Generating volatility forecasts..."):
 
                 forecast = make_volatility_forecast(
-                    fitted_model,
-                    horizon=forecast_horizon,
-                    model_name=model_name,
-                    simulations=10000
+                    fitted,
+                    forecast_horizon,
+                    model_name
                 )
+
+            clear_old_results()
 
             st.session_state.stock_data = data
             st.session_state.returns = returns
-            st.session_state.model_result = fitted_model
+            st.session_state.model_result = fitted
             st.session_state.model_parameters = parameters
             st.session_state.diagnostics = diagnostics
             st.session_state.forecast_result = forecast
 
+            st.session_state.selected_company = company
             st.session_state.selected_ticker = ticker
             st.session_state.selected_model = model_name
             st.session_state.selected_distribution = distribution
 
-            st.sidebar.success("Analysis completed successfully.")
+            st.session_state.analysis_start = start_date
+            st.session_state.analysis_end = end_date
+            st.session_state.analysis_horizon = forecast_horizon
+
+            st.sidebar.success("Analysis completed successfully!")
 
         except Exception as error:
-
-            st.error(f"Model estimation failed: {error}")
+            st.error(f"Analysis failed: {error}")
 
 
 # ============================================================
-# CHECK ANALYSIS AVAILABILITY
+# LOAD STORED DATA
 # ============================================================
 
 data = st.session_state.stock_data
 returns = st.session_state.returns
 result = st.session_state.model_result
 
-if data is None or returns is None or result is None:
-
-    st.info(
-        "Select a company and date range in the sidebar, "
-        "then click Run Analysis."
-    )
-
-    st.markdown("### Quantitative Research Tools")
-
-    col1, col2, col3 = st.columns(3)
-
-    col1.metric("Volatility Models", "3")
-    col2.metric("Innovation Distributions", "3")
-    col3.metric("Risk Frameworks", "2")
-
-    st.markdown("""
-    - EGARCH, GARCH and GJR-GARCH modelling
-    - Student-t, normal and skewed Student-t innovations
-    - ADF and KPSS stationarity tests
-    - Residual and ARCH diagnostics
-    - Multi-step volatility forecasts
-    - Rolling out-of-sample forecast evaluation
-    - EWMA benchmark comparison
-    - Diebold-Mariano forecast tests
-    - Parameter stability analysis
-    - Probability integral transform diagnostics
-    - VaR and Expected Shortfall
-    - Kupiec and Christoffersen backtesting
-    - Equal-weighted portfolio analysis
-    """)
-
-    st.stop()
-
-
-# ============================================================
-# GLOBAL MODEL INFORMATION
-# ============================================================
-
-st.caption(
-    f"Company: {company} | "
-    f"Ticker: {st.session_state.selected_ticker} | "
-    f"Model: {st.session_state.selected_model} | "
-    f"Distribution: {st.session_state.selected_distribution}"
+has_data = (
+    data is not None
+    and returns is not None
+    and result is not None
 )
 
 
 # ============================================================
-# PAGE 1: MARKET DATA
+# TOP STATUS PANEL
 # ============================================================
 
-if page == "Market Data":
+if has_data:
+
+    st.markdown("### Current Research Session")
+
+    c1, c2, c3, c4 = st.columns(4)
+
+    c1.metric(
+        "Selected Stock",
+        st.session_state.selected_company
+    )
+
+    c2.metric(
+        "Ticker",
+        st.session_state.selected_ticker
+    )
+
+    c3.metric(
+        "Volatility Model",
+        st.session_state.selected_model
+    )
+
+    c4.metric(
+        "Observations",
+        f"{len(returns):,}"
+    )
+
+    st.caption(
+        f"Period: {st.session_state.analysis_start} to "
+        f"{st.session_state.analysis_end} | "
+        f"Distribution: {st.session_state.selected_distribution}"
+    )
+
+    st.divider()
+
+
+# ============================================================
+# PAGE 1: OVERVIEW
+# ============================================================
+
+if page == "Overview":
+
+    st.header("Quantitative Research Dashboard")
+
+    st.write(
+        "Welcome to Dutch Quant. Select a Dutch stock from the "
+        "left sidebar, configure your model and load the data "
+        "to begin your quantitative analysis."
+    )
+
+    if has_data:
+
+        col1, col2, col3, col4 = st.columns(4)
+
+        col1.metric(
+            "Latest Price",
+            f"€{data['Close'].iloc[-1]:,.2f}"
+        )
+
+        col2.metric(
+            "Latest Return",
+            f"{returns.iloc[-1]:.2f}%"
+        )
+
+        col3.metric(
+            "Historical Annual Volatility",
+            f"{returns.std() * np.sqrt(252):.2f}%"
+        )
+
+        col4.metric(
+            "Model AIC",
+            f"{result.aic:.2f}"
+        )
+
+        st.subheader("Stock Price Overview")
+
+        fig = go.Figure()
+
+        fig.add_trace(
+            go.Scatter(
+                x=data.index,
+                y=data["Close"],
+                mode="lines",
+                name="Adjusted Close"
+            )
+        )
+
+        st.plotly_chart(
+            make_chart(fig, "Historical Stock Price", "Price (€)"),
+            use_container_width=True
+        )
+
+        st.subheader("Research Sections")
+
+        cols = st.columns(3)
+
+        sections = [
+            ("Market Data", "Price and return analysis"),
+            ("Statistical Analysis", "Distribution and stationarity"),
+            ("Volatility Models", "EGARCH and GARCH estimation"),
+            ("Model Diagnostics", "Residual and ARCH testing"),
+            ("Forecasting", "Future conditional volatility"),
+            ("Risk Management", "VaR and Expected Shortfall"),
+            ("Model Stability & Calibration", "Parameter and PIT testing"),
+            ("Forecast Comparison", "EWMA and DM comparison"),
+            ("Portfolio Analysis", "Portfolio returns and risk")
+        ]
+
+        for i, (name, description) in enumerate(sections):
+            with cols[i % 3]:
+                st.markdown(
+                    f"""
+                    <div class="research-card">
+                        <b>{name}</b><br>
+                        <span style="color:#94a3b8">{description}</span>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+    else:
+
+        st.info(
+            "Your dashboard is ready. Select a stock and click "
+            "'Load Data & Run Analysis' in the left sidebar."
+        )
+
+        st.subheader("Available Research Tools")
+
+        cols = st.columns(3)
+
+        cols[0].metric("Volatility Models", "3")
+        cols[1].metric("Return Distributions", "3")
+        cols[2].metric("Research Sections", "9")
+
+        st.markdown("""
+        **Available analysis**
+
+        - EGARCH(1,1), GARCH(1,1), GJR-GARCH
+        - Student-t, normal and skewed Student-t innovations
+        - ADF and KPSS stationarity tests
+        - Residual and ARCH diagnostics
+        - Multi-step volatility forecasts
+        - Rolling out-of-sample evaluation
+        - EWMA benchmark and Diebold-Mariano tests
+        - Parameter stability and PIT calibration
+        - Historical and parametric VaR and ES
+        - Kupiec and Christoffersen backtesting
+        - Equal-weighted portfolio analysis
+        """)
+
+
+# ============================================================
+# PAGES REQUIRING DATA
+# ============================================================
+
+elif not has_data:
+
+    st.header(page)
+
+    st.warning(
+        "No stock analysis has been loaded yet."
+    )
+
+    st.markdown("""
+    To display this research section:
+
+    1. Select a company in the left sidebar.
+    2. Select the start and end dates.
+    3. Select the volatility model and distribution.
+    4. Click **Load Data & Run Analysis**.
+    5. Return to this section.
+    """)
+
+    st.info(
+        "Your selected research section is available. "
+        "Load market data to populate its charts and statistics."
+    )
+
+
+# ============================================================
+# PAGE 2: MARKET DATA
+# ============================================================
+
+elif page == "Market Data":
 
     st.header("Market Data")
 
-    latest_price = float(data["Close"].iloc[-1])
-    daily_return = float(returns.iloc[-1])
+    c1, c2, c3 = st.columns(3)
 
-    annual_volatility = float(
-        returns.std() * np.sqrt(252)
+    c1.metric(
+        "Latest Price",
+        f"€{data['Close'].iloc[-1]:,.2f}"
     )
 
-    col1, col2, col3 = st.columns(3)
-
-    col1.metric(
-        "Latest Adjusted Close",
-        f"€{latest_price:,.2f}"
-    )
-
-    col2.metric(
+    c2.metric(
         "Latest Daily Return",
-        f"{daily_return:.2f}%"
+        f"{returns.iloc[-1]:.2f}%"
     )
 
-    col3.metric(
-        "Annualized Historical Volatility",
-        f"{annual_volatility:.2f}%"
+    c3.metric(
+        "Annualized Volatility",
+        f"{returns.std() * np.sqrt(252):.2f}%"
     )
-
-    st.subheader("Historical Stock Price")
 
     fig = go.Figure()
 
@@ -621,15 +752,9 @@ if page == "Market Data":
     )
 
     st.plotly_chart(
-        make_chart_layout(
-            fig,
-            "Historical Stock Price",
-            "Price (€)"
-        ),
+        make_chart(fig, "Historical Stock Price", "Price (€)"),
         use_container_width=True
     )
-
-    st.subheader("Daily Log Returns")
 
     fig = go.Figure()
 
@@ -642,41 +767,30 @@ if page == "Market Data":
         )
     )
 
-    fig.add_hline(
-        y=0,
-        line_dash="dash"
-    )
+    fig.add_hline(y=0, line_dash="dash")
 
     st.plotly_chart(
-        make_chart_layout(
-            fig,
-            "Daily Percentage Log Returns",
-            "Return (%)"
-        ),
+        make_chart(fig, "Daily Log Returns", "Return (%)"),
         use_container_width=True
     )
 
     st.subheader("Historical Data")
 
     st.dataframe(
-        data.tail(20),
+        data.tail(30),
         use_container_width=True
     )
 
 
 # ============================================================
-# PAGE 2: STATISTICAL ANALYSIS
+# PAGE 3: STATISTICAL ANALYSIS
 # ============================================================
 
 elif page == "Statistical Analysis":
 
     st.header("Statistical Analysis")
 
-    st.subheader("Descriptive Statistics")
-
-    stats = returns.describe().to_frame(
-        name="Returns"
-    )
+    stats = returns.describe().to_frame("Returns")
 
     stats.loc["Skewness"] = returns.skew()
     stats.loc["Excess Kurtosis"] = returns.kurtosis()
@@ -684,27 +798,15 @@ elif page == "Statistical Analysis":
         returns.std() * np.sqrt(252)
     )
 
-    st.dataframe(
-        stats,
-        use_container_width=True
-    )
+    st.subheader("Descriptive Statistics")
+
+    st.dataframe(stats, use_container_width=True)
 
     st.subheader("Stationarity Tests")
 
     try:
-
         stationarity = stationarity_tests(returns)
-
-        st.dataframe(
-            stationarity,
-            use_container_width=True
-        )
-
-        st.caption(
-            "ADF null: unit root. KPSS null: stationarity. "
-            "A p-value below 0.05 rejects the relevant null hypothesis."
-        )
-
+        st.dataframe(stationarity, use_container_width=True)
     except Exception as error:
         show_error(error)
 
@@ -721,54 +823,33 @@ elif page == "Statistical Analysis":
     )
 
     st.plotly_chart(
-        make_chart_layout(
-            fig,
-            "Distribution of Daily Returns",
-            "Frequency"
-        ),
+        make_chart(fig, "Distribution of Returns", "Frequency"),
         use_container_width=True
     )
 
 
 # ============================================================
-# PAGE 3: VOLATILITY MODELS
+# PAGE 4: VOLATILITY MODELS
 # ============================================================
 
 elif page == "Volatility Models":
 
     st.header("Volatility Models")
 
-    st.subheader("Estimated Model Parameters")
+    st.subheader("Parameter Estimates")
 
     st.dataframe(
         st.session_state.model_parameters,
         use_container_width=True
     )
 
-    st.subheader("Model Fit Statistics")
+    c1, c2, c3 = st.columns(3)
 
-    col1, col2, col3 = st.columns(3)
+    c1.metric("Log Likelihood", f"{result.loglikelihood:.2f}")
+    c2.metric("AIC", f"{result.aic:.2f}")
+    c3.metric("BIC", f"{result.bic:.2f}")
 
-    col1.metric(
-        "Log Likelihood",
-        f"{result.loglikelihood:.2f}"
-    )
-
-    col2.metric(
-        "AIC",
-        f"{result.aic:.2f}"
-    )
-
-    col3.metric(
-        "BIC",
-        f"{result.bic:.2f}"
-    )
-
-    st.subheader("Conditional Volatility")
-
-    volatility = pd.Series(
-        result.conditional_volatility
-    )
+    volatility = pd.Series(result.conditional_volatility)
 
     fig = go.Figure()
 
@@ -782,32 +863,20 @@ elif page == "Volatility Models":
     )
 
     st.plotly_chart(
-        make_chart_layout(
-            fig,
-            "Estimated Conditional Volatility",
-            "Volatility (%)"
-        ),
+        make_chart(fig, "Conditional Volatility", "Volatility (%)"),
         use_container_width=True
     )
 
     st.subheader("Model Comparison")
 
-    st.warning(
-        "This comparison estimates nine specifications "
-        "and may take some time."
-    )
-
-    if st.button("Run Model Comparison"):
+    if st.button("Run Nine-Model Comparison"):
 
         try:
-
-            with st.spinner("Estimating nine models..."):
-
+            with st.spinner("Estimating models..."):
                 comparison = compare_models(returns)
 
             st.session_state.model_comparison = comparison
-
-            st.success("Model comparison completed.")
+            st.success("Comparison completed.")
 
         except Exception as error:
             show_error(error)
@@ -819,14 +888,9 @@ elif page == "Volatility Models":
             use_container_width=True
         )
 
-        st.caption(
-            "Lower AIC and BIC indicate better relative in-sample fit. "
-            "They do not establish superior out-of-sample performance."
-        )
-
 
 # ============================================================
-# PAGE 4: MODEL DIAGNOSTICS
+# PAGE 5: MODEL DIAGNOSTICS
 # ============================================================
 
 elif page == "Model Diagnostics":
@@ -835,36 +899,12 @@ elif page == "Model Diagnostics":
 
     diagnostics = st.session_state.diagnostics
 
-    diagnostics_df = pd.DataFrame(
-        list(diagnostics.items()),
-        columns=["Diagnostic", "Value"]
-    )
-
     st.dataframe(
-        diagnostics_df,
+        pd.DataFrame(
+            list(diagnostics.items()),
+            columns=["Diagnostic", "Value"]
+        ),
         use_container_width=True
-    )
-
-    st.subheader("Diagnostic Interpretation")
-
-    for name, value in diagnostics.items():
-
-        if "p-value" in name.lower():
-
-            if value < 0.05:
-                st.warning(
-                    f"{name}: {value:.4f} — Reject the null hypothesis."
-                )
-
-            else:
-                st.success(
-                    f"{name}: {value:.4f} — Do not reject the null hypothesis."
-                )
-
-    st.caption(
-        "Ljung-Box tests examine residual autocorrelation. "
-        "ARCH LM examines remaining ARCH effects. "
-        "A high p-value does not prove correct model specification."
     )
 
     st.subheader("Standardized Residuals")
@@ -883,112 +923,95 @@ elif page == "Model Diagnostics":
     )
 
     st.plotly_chart(
-        make_chart_layout(
-            fig,
-            "Standardized Residuals",
-            "Residual"
-        ),
+        make_chart(fig, "Standardized Residuals", "Residual"),
         use_container_width=True
+    )
+
+    st.subheader("Diagnostic Interpretation")
+
+    for name, value in diagnostics.items():
+
+        if "p-value" in name.lower():
+
+            if value < 0.05:
+                st.warning(f"{name}: {value:.4f} — Reject null.")
+            else:
+                st.success(f"{name}: {value:.4f} — Do not reject null.")
+
+    st.caption(
+        "Non-rejection does not prove that the model is correctly specified."
     )
 
 
 # ============================================================
-# PAGE 5: FORECASTING
+# PAGE 6: FORECASTING
 # ============================================================
 
 elif page == "Forecasting":
 
     st.header("Volatility Forecasting")
 
-    st.subheader(
-        f"{forecast_horizon}-Day Conditional Variance Forecast"
+    forecast = st.session_state.forecast_result
+
+    variance_values = forecast.variance.iloc[-1].to_numpy(dtype=float)
+
+    forecast_table = pd.DataFrame({
+        "Forecast Day": np.arange(1, len(variance_values) + 1),
+        "Forecast Variance": variance_values,
+        "Forecast Volatility (%)": np.sqrt(variance_values)
+    })
+
+    st.dataframe(
+        forecast_table,
+        use_container_width=True
     )
 
-    try:
+    fig = go.Figure()
 
-        forecast = st.session_state.forecast_result
-
-        variance_values = (
-            forecast.variance.iloc[-1].to_numpy(dtype=float)
+    fig.add_trace(
+        go.Scatter(
+            x=forecast_table["Forecast Day"],
+            y=forecast_table["Forecast Volatility (%)"],
+            mode="lines+markers",
+            name="Forecast Volatility"
         )
+    )
 
-        volatility_values = np.sqrt(variance_values)
+    fig.update_layout(
+        template="plotly_dark",
+        title="Future Conditional Volatility",
+        paper_bgcolor="#0b1220",
+        plot_bgcolor="#111b2e",
+        font=dict(color="#e5e7eb"),
+        xaxis_title="Forecast Day",
+        yaxis_title="Volatility (%)",
+        height=420
+    )
 
-        forecast_table = pd.DataFrame({
-            "Forecast Day": np.arange(
-                1,
-                len(variance_values) + 1
-            ),
-            "Forecast Variance": variance_values,
-            "Forecast Volatility (%)": volatility_values
-        })
-
-        st.dataframe(
-            forecast_table,
-            use_container_width=True
-        )
-
-        fig = go.Figure()
-
-        fig.add_trace(
-            go.Scatter(
-                x=forecast_table["Forecast Day"],
-                y=forecast_table["Forecast Volatility (%)"],
-                mode="lines+markers",
-                name="Forecast Volatility"
-            )
-        )
-
-        fig.update_layout(
-            title="Future Conditional Volatility",
-            template="plotly_dark",
-            paper_bgcolor="#0b1120",
-            plot_bgcolor="#111827",
-            font=dict(color="#e5e7eb"),
-            xaxis_title="Forecast Horizon (Trading Days)",
-            yaxis_title="Volatility (%)",
-            height=420
-        )
-
-        st.plotly_chart(
-            fig,
-            use_container_width=True
-        )
-
-        st.info(
-            "EGARCH multi-step forecasts use simulation. "
-            "These are conditional model forecasts, not guaranteed outcomes."
-        )
-
-    except Exception as error:
-        show_error(error)
+    st.plotly_chart(fig, use_container_width=True)
 
     st.divider()
 
-    st.subheader("Rolling Out-of-Sample Evaluation")
+    st.subheader("Rolling Forecast Evaluation")
 
-    rolling_window = st.number_input(
-        "Rolling Estimation Window",
+    window = st.number_input(
+        "Rolling Window",
         min_value=250,
         max_value=max(250, len(returns) - 1),
         value=max(250, min(750, len(returns) - 20)),
-        step=50,
-        key="rolling_window"
+        step=50
     )
 
-    if st.button("Run Rolling Forecast Evaluation"):
+    if st.button("Run Rolling Forecast"):
 
         try:
-
-            with st.spinner(
-                "Estimating rolling forecasts. This may take some time..."
-            ):
+            with st.spinner("Running rolling estimation..."):
 
                 rolling = rolling_forecast(
                     returns,
                     model_name=st.session_state.selected_model,
                     distribution=st.session_state.selected_distribution,
-                    window=int(rolling_window)
+                    window=int(window)
                 )
 
                 evaluation = evaluate_forecasts(rolling)
@@ -996,7 +1019,7 @@ elif page == "Forecasting":
             st.session_state.rolling_forecasts = rolling
             st.session_state.forecast_evaluation = evaluation
 
-            st.success("Rolling forecast evaluation completed.")
+            st.success("Forecast evaluation completed.")
 
         except Exception as error:
             show_error(error)
@@ -1005,28 +1028,23 @@ elif page == "Forecasting":
 
         evaluation = st.session_state.forecast_evaluation
 
-        col1, col2, col3 = st.columns(3)
+        c1, c2, c3 = st.columns(3)
 
-        col1.metric("MSE", f"{evaluation['MSE']:.6f}")
-        col2.metric("QLIKE", f"{evaluation['QLIKE']:.6f}")
-        col3.metric(
-            "Forecast Observations",
+        c1.metric("MSE", f"{evaluation['MSE']:.6f}")
+        c2.metric("QLIKE", f"{evaluation['QLIKE']:.6f}")
+        c3.metric(
+            "Forecast Count",
             evaluation["Forecast Observations"]
         )
 
         st.dataframe(
-            st.session_state.rolling_forecasts.tail(20),
+            st.session_state.rolling_forecasts.tail(30),
             use_container_width=True
-        )
-
-        st.caption(
-            "Squared returns are a noisy proxy for realized variance. "
-            "Use the same forecast dates when comparing models."
         )
 
 
 # ============================================================
-# PAGE 6: RISK MANAGEMENT
+# PAGE 7: RISK MANAGEMENT
 # ============================================================
 
 elif page == "Risk Management":
@@ -1036,33 +1054,20 @@ elif page == "Risk Management":
     confidence = st.selectbox(
         "Confidence Level",
         [0.90, 0.95, 0.975, 0.99],
-        index=1,
-        format_func=lambda x: f"{x * 100:.1f}%"
+        index=1
     )
 
-    st.subheader("Historical VaR and Expected Shortfall")
+    st.subheader("Historical Risk")
 
-    try:
+    historical = historical_risk(
+        returns,
+        confidence=confidence
+    )
 
-        historical = historical_risk(
-            returns,
-            confidence=confidence
-        )
+    c1, c2 = st.columns(2)
 
-        col1, col2 = st.columns(2)
-
-        col1.metric(
-            "Historical VaR",
-            f"{historical['VaR']:.4f}%"
-        )
-
-        col2.metric(
-            "Historical Expected Shortfall",
-            f"{historical['ES']:.4f}%"
-        )
-
-    except Exception as error:
-        show_error(error)
+    c1.metric("Historical VaR", f"{historical['VaR']:.4f}%")
+    c2.metric("Historical ES", f"{historical['ES']:.4f}%")
 
     st.divider()
 
@@ -1072,37 +1077,28 @@ elif page == "Risk Management":
 
         try:
 
-            one_day_forecast = result.forecast(
+            forecast = result.forecast(
                 horizon=1,
                 method="analytic",
                 reindex=False
             )
 
-            next_variance = float(
-                one_day_forecast.variance.iloc[-1, 0]
-            )
+            variance = float(forecast.variance.iloc[-1, 0])
 
-            parametric = student_t_risk(
+            risk = student_t_risk(
                 result,
                 confidence=confidence,
-                forecast_variance=next_variance
+                forecast_variance=variance
             )
 
-            col1, col2 = st.columns(2)
+            c1, c2 = st.columns(2)
 
-            col1.metric(
-                "Forecast Student-t VaR",
-                f"{parametric['VaR']:.4f}%"
-            )
-
-            col2.metric(
-                "Forecast Student-t ES",
-                f"{parametric['ES']:.4f}%"
-            )
+            c1.metric("Forecast VaR", f"{risk['VaR']:.4f}%")
+            c2.metric("Forecast ES", f"{risk['ES']:.4f}%")
 
             st.caption(
-                f"Degrees of freedom: "
-                f"{parametric['Degrees of Freedom']:.3f}"
+                f"Student-t degrees of freedom: "
+                f"{risk['Degrees of Freedom']:.3f}"
             )
 
         except Exception as error:
@@ -1111,94 +1107,67 @@ elif page == "Risk Management":
     else:
 
         st.info(
-            "Student-t VaR requires the Student-t distribution. "
-            "Select 't' in the sidebar and rerun the analysis."
+            "Select Student-t distribution in the sidebar for "
+            "parametric Student-t risk calculations."
         )
 
     st.divider()
 
     st.subheader("Rolling VaR Backtesting")
 
-    st.warning(
-        "This procedure repeatedly estimates EGARCH Student-t models "
-        "and can take several minutes."
-    )
-
-    backtest_window = st.number_input(
-        "Backtesting Estimation Window",
+    window = st.number_input(
+        "Backtest Estimation Window",
         min_value=250,
         max_value=max(250, len(returns) - 1),
         value=max(250, min(500, len(returns) - 20)),
         step=50,
-        key="backtest_window"
+        key="var_window"
     )
 
     if st.button("Run VaR Backtest"):
 
         try:
 
-            with st.spinner(
-                "Estimating chronological VaR forecasts..."
-            ):
+            with st.spinner("Running rolling VaR backtest..."):
 
-                var_forecasts = build_rolling_var(
+                var_data = build_rolling_var(
                     returns,
                     confidence=confidence,
-                    window=int(backtest_window)
+                    window=int(window)
                 )
 
-                backtest_results = var_backtests(
-                    var_forecasts["Actual Return"],
-                    var_forecasts["VaR"],
+                backtest = var_backtests(
+                    var_data["Actual Return"],
+                    var_data["VaR"],
                     confidence=confidence
                 )
 
-            st.session_state.var_forecasts = var_forecasts
-            st.session_state.var_backtest_results = backtest_results
+            st.session_state.var_forecasts = var_data
+            st.session_state.var_backtest_results = backtest
 
-            st.success("VaR backtesting completed.")
+            st.success("Backtesting completed.")
 
         except Exception as error:
             show_error(error)
 
     if st.session_state.var_backtest_results is not None:
 
-        results = st.session_state.var_backtest_results
-
-        st.subheader("Backtesting Results")
-
-        result_df = pd.DataFrame(
-            list(results.items()),
-            columns=["Statistic", "Value"]
-        )
-
         st.dataframe(
-            result_df,
+            pd.DataFrame(
+                list(st.session_state.var_backtest_results.items()),
+                columns=["Statistic", "Value"]
+            ),
             use_container_width=True
         )
 
         var_data = st.session_state.var_forecasts
 
         st.caption(
-            f"Attempted forecasts: {var_data.attrs.get('attempted', 'N/A')} | "
-            f"Failed fits: {var_data.attrs.get('failed', 'N/A')}"
-        )
-
-        st.caption(
-            "A p-value below 0.05 rejects the relevant test null. "
-            "Non-rejection does not prove that VaR is accurate."
+            f"Failed estimations: {var_data.attrs.get('failed', 'N/A')} "
+            f"of {var_data.attrs.get('attempted', 'N/A')} attempts."
         )
 
         fig = go.Figure()
-
-        fig.add_trace(
-            go.Scatter(
-                x=var_data.index,
-                y=-var_data["VaR"],
-                mode="lines",
-                name="Negative VaR Threshold"
-            )
-        )
 
         fig.add_trace(
             go.Scatter(
@@ -1209,37 +1178,33 @@ elif page == "Risk Management":
             )
         )
 
+        fig.add_trace(
+            go.Scatter(
+                x=var_data.index,
+                y=-var_data["VaR"],
+                mode="lines",
+                name="Negative VaR Threshold"
+            )
+        )
+
         st.plotly_chart(
-            make_chart_layout(
-                fig,
-                "Actual Returns and VaR Threshold",
-                "Return (%)"
-            ),
+            make_chart(fig, "Returns vs VaR", "Return (%)"),
             use_container_width=True
         )
 
 
 # ============================================================
-# PAGE 7: MODEL STABILITY AND CALIBRATION
+# PAGE 8: MODEL STABILITY & CALIBRATION
 # ============================================================
 
 elif page == "Model Stability & Calibration":
 
     st.header("Model Stability & Calibration")
 
-    st.markdown(
-        "Evaluate whether model parameters and innovation "
-        "distribution assumptions remain consistent over time."
-    )
-
-    # --------------------------------------------------------
-    # ROLLING PARAMETER STABILITY
-    # --------------------------------------------------------
-
     st.subheader("Rolling Parameter Stability")
 
-    stability_window = st.number_input(
-        "Stability Estimation Window",
+    window = st.number_input(
+        "Estimation Window",
         min_value=250,
         max_value=max(250, len(returns) - 1),
         value=max(250, min(750, len(returns) - 100)),
@@ -1247,7 +1212,7 @@ elif page == "Model Stability & Calibration":
         key="stability_window"
     )
 
-    stability_step = st.number_input(
+    step = st.number_input(
         "Estimation Step",
         min_value=10,
         max_value=250,
@@ -1259,14 +1224,14 @@ elif page == "Model Stability & Calibration":
 
         try:
 
-            with st.spinner("Estimating rolling model parameters..."):
+            with st.spinner("Estimating rolling parameters..."):
 
                 estimates, summary = rolling_parameter_stability(
                     returns,
                     model_name=st.session_state.selected_model,
                     distribution=st.session_state.selected_distribution,
-                    window=int(stability_window),
-                    step=int(stability_step)
+                    window=int(window),
+                    step=int(step)
                 )
 
             st.session_state.stability_estimates = estimates
@@ -1280,23 +1245,22 @@ elif page == "Model Stability & Calibration":
     if st.session_state.stability_estimates is not None:
 
         estimates = st.session_state.stability_estimates
-        summary = st.session_state.stability_summary
 
         st.subheader("Parameter Summary")
 
         st.dataframe(
-            summary,
+            st.session_state.stability_summary,
             use_container_width=True
         )
 
-        parameter_names = [
-            name for name in estimates.columns
-            if name not in ["Log Likelihood", "AIC", "BIC"]
+        parameters = [
+            col for col in estimates.columns
+            if col not in ["Log Likelihood", "AIC", "BIC"]
         ]
 
-        selected_parameter = st.selectbox(
+        selected = st.selectbox(
             "Select Parameter",
-            parameter_names
+            parameters
         )
 
         fig = go.Figure()
@@ -1304,34 +1268,20 @@ elif page == "Model Stability & Calibration":
         fig.add_trace(
             go.Scatter(
                 x=estimates.index,
-                y=estimates[selected_parameter],
+                y=estimates[selected],
                 mode="lines+markers",
-                name=selected_parameter
+                name=selected
             )
         )
 
         st.plotly_chart(
-            make_chart_layout(
-                fig,
-                f"Rolling Estimate: {selected_parameter}",
-                "Parameter Estimate"
-            ),
+            make_chart(fig, f"Rolling {selected}", "Estimate"),
             use_container_width=True
-        )
-
-        st.caption(
-            "Rolling estimates are descriptive evidence of parameter "
-            "variation. They are not, by themselves, a formal structural "
-            "break test."
         )
 
     st.divider()
 
-    # --------------------------------------------------------
-    # PIT DIAGNOSTICS
-    # --------------------------------------------------------
-
-    st.subheader("Student-t Distribution Calibration")
+    st.subheader("Student-t PIT Calibration")
 
     if st.session_state.selected_distribution == "t":
 
@@ -1339,10 +1289,10 @@ elif page == "Model Stability & Calibration":
 
             try:
 
-                pit, pit_summary = student_t_pit(result)
+                pit, summary = student_t_pit(result)
 
                 st.session_state.pit_values = pit
-                st.session_state.pit_summary = pit_summary
+                st.session_state.pit_summary = summary
 
                 st.success("PIT diagnostics completed.")
 
@@ -1351,99 +1301,70 @@ elif page == "Model Stability & Calibration":
 
         if st.session_state.pit_summary is not None:
 
-            pit_summary = st.session_state.pit_summary
+            summary = st.session_state.pit_summary
 
-            col1, col2, col3 = st.columns(3)
+            c1, c2, c3 = st.columns(3)
 
-            col1.metric(
-                "KS Statistic",
-                f"{pit_summary['KS Statistic']:.4f}"
-            )
-
-            col2.metric(
-                "KS P-value",
-                f"{pit_summary['KS P-value']:.4f}"
-            )
-
-            col3.metric(
-                "PIT Mean",
-                f"{pit_summary['PIT Mean']:.4f}"
-            )
-
-            st.write("PIT Summary")
+            c1.metric("KS Statistic", f"{summary['KS Statistic']:.4f}")
+            c2.metric("KS P-value", f"{summary['KS P-value']:.4f}")
+            c3.metric("PIT Mean", f"{summary['PIT Mean']:.4f}")
 
             st.dataframe(
                 pd.DataFrame(
-                    list(pit_summary.items()),
+                    list(summary.items()),
                     columns=["Statistic", "Value"]
                 ),
                 use_container_width=True
             )
 
-            pit = st.session_state.pit_values
-
             fig = go.Figure()
 
             fig.add_trace(
                 go.Histogram(
-                    x=pit,
+                    x=st.session_state.pit_values,
                     nbinsx=20,
-                    name="PIT Values"
+                    name="PIT"
                 )
             )
 
             st.plotly_chart(
-                make_chart_layout(
-                    fig,
-                    "Probability Integral Transform",
-                    "Frequency"
-                ),
+                make_chart(fig, "PIT Distribution", "Frequency"),
                 use_container_width=True
             )
 
             st.caption(
-                "A well-calibrated conditional distribution should produce "
-                "approximately uniform PIT values. The ordinary KS test "
-                "does not adjust for estimated model parameters."
+                "The ordinary KS test does not correct for parameter "
+                "estimation. Treat it as a diagnostic."
             )
 
     else:
 
-        st.info(
-            "PIT calibration in this module is implemented for "
-            "Student-t innovations. Select distribution 't' and "
-            "rerun the model to use it."
-        )
+        st.info("PIT diagnostic requires Student-t innovations.")
 
 
 # ============================================================
-# PAGE 8: FORECAST COMPARISON
+# PAGE 9: FORECAST COMPARISON
 # ============================================================
 
 elif page == "Forecast Comparison":
 
     st.header("Forecast Comparison")
 
-    st.markdown(
-        "Compare your selected volatility model against a "
+    st.write(
+        "Compare your selected volatility model against the "
         "RiskMetrics-style EWMA benchmark."
     )
 
-    st.info(
-        "Both forecasts use the same chronological forecast dates. "
-        "Squared returns are used as the realized variance proxy."
-    )
-
-    comparison_window = st.number_input(
+    window = st.number_input(
         "Common Estimation Window",
         min_value=250,
         max_value=max(250, len(returns) - 1),
         value=max(250, min(750, len(returns) - 20)),
         step=50,
-        key="comparison_window"
+        key="forecast_compare_window"
     )
 
-    ewma_decay = st.slider(
+    decay = st.slider(
         "EWMA Decay Factor",
         min_value=0.80,
         max_value=0.99,
@@ -1451,102 +1372,79 @@ elif page == "Forecast Comparison":
         step=0.01
     )
 
-    if st.button("Run EGARCH vs EWMA Comparison"):
+    if st.button("Run Forecast Comparison"):
 
         try:
 
-            with st.spinner(
-                "Estimating model forecasts and EWMA benchmark..."
-            ):
+            with st.spinner("Comparing volatility forecasts..."):
 
-                model_forecasts = rolling_forecast(
+                model_forecast = rolling_forecast(
                     returns,
                     model_name=st.session_state.selected_model,
                     distribution=st.session_state.selected_distribution,
-                    window=int(comparison_window)
+                    window=int(window)
                 )
 
-                ewma_forecasts = make_ewma_forecasts(
+                ewma = make_ewma_forecasts(
                     returns,
-                    forecast_index=model_forecasts.index,
-                    window=int(comparison_window),
-                    decay=ewma_decay
+                    model_forecast.index,
+                    window=int(window),
+                    decay=decay
                 )
 
-                common = model_forecasts.join(
-                    ewma_forecasts[
-                        ["EWMA Variance", "EWMA Volatility"]
-                    ],
+                common = model_forecast.join(
+                    ewma[["EWMA Variance", "EWMA Volatility"]],
                     how="inner"
                 ).dropna()
 
                 if len(common) < 30:
                     raise ValueError(
-                        "Fewer than 30 common forecasts are available."
+                        "Not enough common forecast observations."
                     )
 
-                actual_variance = (
-                    common["Actual Return"] ** 2
+                actual = common["Actual Return"] ** 2
+                model_var = common["Forecast Variance"]
+                ewma_var = common["EWMA Variance"]
+
+                model_qlike = np.mean(
+                    np.log(model_var) + actual / model_var
                 )
 
-                model_variance = common["Forecast Variance"]
-                ewma_variance = common["EWMA Variance"]
-
-                model_qlike = float(
-                    np.mean(
-                        np.log(model_variance)
-                        + actual_variance / model_variance
-                    )
+                ewma_qlike = np.mean(
+                    np.log(ewma_var) + actual / ewma_var
                 )
 
-                ewma_qlike = float(
-                    np.mean(
-                        np.log(ewma_variance)
-                        + actual_variance / ewma_variance
-                    )
-                )
-
-                model_mse = float(
-                    np.mean(
-                        (actual_variance - model_variance) ** 2
-                    )
-                )
-
-                ewma_mse = float(
-                    np.mean(
-                        (actual_variance - ewma_variance) ** 2
-                    )
-                )
+                model_mse = np.mean((actual - model_var) ** 2)
+                ewma_mse = np.mean((actual - ewma_var) ** 2)
 
                 dm_qlike = diebold_mariano_test(
-                    actual_variance,
-                    model_variance,
-                    ewma_variance,
+                    actual,
+                    model_var,
+                    ewma_var,
                     horizon=1,
                     loss="qlike",
                     bandwidth=0
                 )
 
                 dm_mse = diebold_mariano_test(
-                    actual_variance,
-                    model_variance,
-                    ewma_variance,
+                    actual,
+                    model_var,
+                    ewma_var,
                     horizon=1,
                     loss="mse",
                     bandwidth=0
                 )
 
-                comparison_results = {
-                    "Model QLIKE": model_qlike,
-                    "EWMA QLIKE": ewma_qlike,
-                    "Model MSE": model_mse,
-                    "EWMA MSE": ewma_mse,
+                st.session_state.forecast_comparison = {
+                    "Model QLIKE": float(model_qlike),
+                    "EWMA QLIKE": float(ewma_qlike),
+                    "Model MSE": float(model_mse),
+                    "EWMA MSE": float(ewma_mse),
                     "DM QLIKE": dm_qlike,
                     "DM MSE": dm_mse,
                     "Forecast Count": len(common)
                 }
 
-                st.session_state.forecast_comparison = comparison_results
                 st.session_state.comparison_forecasts = common
 
             st.success("Forecast comparison completed.")
@@ -1560,68 +1458,45 @@ elif page == "Forecast Comparison":
 
         st.subheader("Forecast Performance")
 
-        col1, col2 = st.columns(2)
+        c1, c2 = st.columns(2)
 
-        col1.metric(
+        c1.metric(
             f"{st.session_state.selected_model} QLIKE",
             f"{comparison['Model QLIKE']:.6f}"
         )
 
-        col2.metric(
+        c2.metric(
             "EWMA QLIKE",
             f"{comparison['EWMA QLIKE']:.6f}"
         )
 
-        col3, col4 = st.columns(2)
+        c3, c4 = st.columns(2)
 
-        col3.metric(
-            f"{st.session_state.selected_model} MSE",
+        c3.metric(
+            "Model MSE",
             f"{comparison['Model MSE']:.6f}"
         )
 
-        col4.metric(
+        c4.metric(
             "EWMA MSE",
             f"{comparison['EWMA MSE']:.6f}"
         )
 
-        st.write(
-            f"Common forecast observations: "
-            f"{comparison['Forecast Count']}"
-        )
+        st.subheader("Diebold-Mariano QLIKE Test")
 
-        st.divider()
+        dm = comparison["DM QLIKE"]
 
-        st.subheader("Diebold-Mariano Test: QLIKE")
+        st.write(f"Statistic: {dm['DM Statistic']:.4f}")
+        st.write(f"P-value: {dm['P-value']:.4f}")
+        st.write(f"Lower average loss: {dm['Lower Average Loss']}")
 
-        dm_qlike = comparison["DM QLIKE"]
+        st.subheader("Diebold-Mariano MSE Test")
 
-        st.write(
-            f"DM statistic: {dm_qlike['DM Statistic']:.4f}"
-        )
+        dm = comparison["DM MSE"]
 
-        st.write(
-            f"P-value: {dm_qlike['P-value']:.4f}"
-        )
-
-        st.write(
-            f"Lower average loss: {dm_qlike['Lower Average Loss']}"
-        )
-
-        st.subheader("Diebold-Mariano Test: MSE")
-
-        dm_mse = comparison["DM MSE"]
-
-        st.write(
-            f"DM statistic: {dm_mse['DM Statistic']:.4f}"
-        )
-
-        st.write(
-            f"P-value: {dm_mse['P-value']:.4f}"
-        )
-
-        st.write(
-            f"Lower average loss: {dm_mse['Lower Average Loss']}"
-        )
+        st.write(f"Statistic: {dm['DM Statistic']:.4f}")
+        st.write(f"P-value: {dm['P-value']:.4f}")
+        st.write(f"Lower average loss: {dm['Lower Average Loss']}")
 
         common = st.session_state.comparison_forecasts
 
@@ -1646,24 +1521,18 @@ elif page == "Forecast Comparison":
         )
 
         st.plotly_chart(
-            make_chart_layout(
-                fig,
-                "Out-of-Sample Volatility Forecasts",
-                "Forecast Volatility (%)"
-            ),
+            make_chart(fig, "Out-of-Sample Forecasts", "Volatility (%)"),
             use_container_width=True
         )
 
         st.caption(
-            "Negative DM mean loss difference means the selected model "
-            "has lower average loss than EWMA. A p-value below 0.05 "
-            "indicates evidence of a difference in predictive accuracy. "
-            "The one-step test uses a zero-lag HAC variance estimate."
+            "Squared returns are used as a noisy realized variance proxy. "
+            "A negative DM mean loss difference favors the selected model."
         )
 
 
 # ============================================================
-# PAGE 9: PORTFOLIO ANALYSIS
+# PAGE 10: PORTFOLIO ANALYSIS
 # ============================================================
 
 elif page == "Portfolio Analysis":
@@ -1671,19 +1540,19 @@ elif page == "Portfolio Analysis":
     st.header("Portfolio Analysis")
 
     st.write(
-        "Construct an equal-weighted portfolio from selected Dutch equities."
+        "Construct and analyse an equal-weighted Dutch equity portfolio."
     )
 
-    portfolio_companies = st.multiselect(
-        "Select Portfolio Companies",
+    companies = st.multiselect(
+        "Select Portfolio Stocks",
         list(DUTCH_STOCKS.keys()),
         default=[
-            name for name in ["ASML", "Shell", "ING Group"]
-            if name in DUTCH_STOCKS
+            x for x in ["ASML", "Shell", "ING Group"]
+            if x in DUTCH_STOCKS
         ]
     )
 
-    if len(portfolio_companies) < 2:
+    if len(companies) < 2:
 
         st.info("Select at least two companies.")
 
@@ -1691,116 +1560,96 @@ elif page == "Portfolio Analysis":
 
         try:
 
-            portfolio_returns = {}
+            portfolio_data = {}
 
-            with st.spinner("Downloading portfolio market data..."):
+            with st.spinner("Downloading portfolio data..."):
 
-                for name in portfolio_companies:
-
-                    symbol = DUTCH_STOCKS[name]
+                for name in companies:
 
                     stock = get_stock_data(
-                        symbol,
+                        DUTCH_STOCKS[name],
                         start_date,
                         end_date + timedelta(days=1)
                     )
 
-                    stock_returns = calculate_returns(
+                    portfolio_data[name] = calculate_returns(
                         stock["Close"]
                     )
 
-                    portfolio_returns[name] = stock_returns
-
             returns_df = pd.DataFrame(
-                portfolio_returns
+                portfolio_data
             ).dropna()
 
             if len(returns_df) < 30:
-                raise ValueError(
-                    "Not enough common observations for portfolio analysis."
-                )
+                raise ValueError("Insufficient common observations.")
 
             weights = np.repeat(
-                1 / len(portfolio_companies),
-                len(portfolio_companies)
+                1 / len(companies),
+                len(companies)
             )
 
             portfolio = returns_df.dot(weights)
 
-            annual_return = float(
-                portfolio.mean() * 252
-            )
+            annual_return = portfolio.mean() * 252
+            annual_volatility = portfolio.std() * np.sqrt(252)
 
-            annual_volatility = float(
-                portfolio.std() * np.sqrt(252)
-            )
-
-            sharpe_ratio = (
+            sharpe = (
                 annual_return / annual_volatility
-                if annual_volatility > 0
-                else np.nan
+                if annual_volatility > 0 else np.nan
             )
 
-            portfolio_growth = np.exp(
-                portfolio.cumsum() / 100
-            )
-
-            portfolio_var = historical_risk(
+            portfolio_risk = historical_risk(
                 portfolio,
                 confidence=0.95
             )
 
+            growth = np.exp(portfolio.cumsum() / 100)
+
             st.session_state.portfolio_returns = returns_df
             st.session_state.portfolio_series = portfolio
 
-            col1, col2, col3 = st.columns(3)
+            c1, c2, c3 = st.columns(3)
 
-            col1.metric(
+            c1.metric(
                 "Annualized Mean Log Return",
                 f"{annual_return:.2f}%"
             )
 
-            col2.metric(
+            c2.metric(
                 "Annualized Volatility",
                 f"{annual_volatility:.2f}%"
             )
 
-            col3.metric(
-                "Sharpe Ratio (0% risk-free rate)",
-                f"{sharpe_ratio:.3f}"
+            c3.metric(
+                "Sharpe Ratio",
+                f"{sharpe:.3f}"
             )
 
-            col4, col5 = st.columns(2)
+            c4, c5 = st.columns(2)
 
-            col4.metric(
-                "Portfolio 95% Historical VaR",
-                f"{portfolio_var['VaR']:.3f}%"
+            c4.metric(
+                "95% Historical VaR",
+                f"{portfolio_risk['VaR']:.3f}%"
             )
 
-            col5.metric(
-                "Portfolio 95% Historical ES",
-                f"{portfolio_var['ES']:.3f}%"
+            c5.metric(
+                "95% Historical ES",
+                f"{portfolio_risk['ES']:.3f}%"
             )
-
-            st.subheader("Portfolio Growth")
 
             fig = go.Figure()
 
             fig.add_trace(
                 go.Scatter(
-                    x=portfolio_growth.index,
-                    y=portfolio_growth,
+                    x=growth.index,
+                    y=growth,
                     mode="lines",
-                    name="Portfolio"
+                    name="Portfolio Growth"
                 )
             )
 
             st.plotly_chart(
-                make_chart_layout(
-                    fig,
-                    "Growth of €1 Invested",
-                    "Portfolio Value (€)"
-                ),
+                make_chart(fig, "Growth of €1 Invested", "Portfolio Value (€)"),
                 use_container_width=True
             )
 
@@ -1820,11 +1669,12 @@ elif page == "Portfolio Analysis":
             )
 
             fig.update_layout(
-                title="Asset Return Correlations",
                 template="plotly_dark",
-                paper_bgcolor="#0b1120",
-                plot_bgcolor="#111827",
-                height=500
+                paper_bgcolor="#0b1220",
+                plot_bgcolor="#111b2e",
+                font=dict(color="#e5e7eb"),
+                height=500,
+                title="Asset Return Correlations"
             )
 
             st.plotly_chart(
@@ -1832,17 +1682,14 @@ elif page == "Portfolio Analysis":
                 use_container_width=True
             )
 
-            st.subheader("Portfolio Return Statistics")
-
             st.dataframe(
                 returns_df.describe(),
                 use_container_width=True
             )
 
             st.caption(
-                "Equal-weighted baseline. The Sharpe ratio assumes a "
-                "zero risk-free rate. Transaction costs, taxes, rebalancing "
-                "and dynamic covariance are not included."
+                "Equal-weighted baseline. Excludes transaction costs, "
+                "taxes, rebalancing and dynamic covariance."
             )
 
         except Exception as error:
@@ -1856,6 +1703,6 @@ elif page == "Portfolio Analysis":
 st.divider()
 
 st.caption(
-    "Dutch Quant | Quantitative Financial Research Platform | "
-    "Educational and research use only. Not investment advice."
+    "DUTCH QUANT | QUANTITATIVE FINANCIAL RESEARCH | "
+    "Educational and research purposes only. Not investment advice."
 )
