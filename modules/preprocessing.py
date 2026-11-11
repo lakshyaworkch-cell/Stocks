@@ -1,65 +1,60 @@
-
 import numpy as np
 import pandas as pd
 
 
-def validate_prices(prices):
-    prices = pd.Series(prices).copy()
+def calculate_returns(prices):
+    """
+    Calculate daily logarithmic returns in percentage units.
+
+    Formula:
+        r_t = 100 * ln(P_t / P_(t-1))
+    """
+
+    if isinstance(prices, pd.DataFrame):
+        if "Close" not in prices.columns:
+            raise ValueError("The input DataFrame must contain a Close column.")
+
+        prices = prices["Close"]
 
     prices = pd.to_numeric(prices, errors="coerce")
-    prices = prices.replace([np.inf, -np.inf], np.nan)
     prices = prices.dropna()
+    prices = prices[prices > 0]
 
-    if not prices.index.is_monotonic_increasing:
-        prices = prices.sort_index()
-
-    if prices.index.has_duplicates:
-        raise ValueError("Duplicate dates found in price data.")
-
-    if (prices <= 0).any():
-        raise ValueError("Prices must be strictly positive.")
-
-    if len(prices) < 250:
+    if len(prices) < 251:
         raise ValueError(
-            "At least 250 price observations are recommended."
+            "At least 251 valid price observations are required "
+            "to calculate a useful return series."
         )
 
-    return prices
+    returns = 100 * np.log(prices / prices.shift(1))
+    returns = returns.replace([np.inf, -np.inf], np.nan).dropna()
 
+    returns.name = "Returns"
 
-def calculate_returns(prices):
-    prices = validate_prices(prices)
-
-    returns = np.log(prices).diff() * 100
-
-    returns = returns.replace(
-        [np.inf, -np.inf], np.nan
-    ).dropna()
-
-    if returns.std() < 1e-10:
-        raise ValueError("Returns have almost zero variance.")
+    if len(returns) < 250:
+        raise ValueError(
+            "At least 250 valid return observations are required."
+        )
 
     return returns
 
 
-def validate_returns(returns, minimum=250):
-    returns = pd.Series(returns).copy()
+def validate_returns(returns, minimum_observations=250):
+    """
+    Validate a return series before model estimation.
+    """
 
-    returns = pd.to_numeric(
-        returns, errors="coerce"
-    )
+    returns = pd.Series(returns).dropna()
 
-    returns = returns.replace(
-        [np.inf, -np.inf], np.nan
-    ).dropna()
+    if len(returns) < minimum_observations:
+        raise ValueError(
+            f"At least {minimum_observations} observations are required."
+        )
 
     if not np.isfinite(returns).all():
-        raise ValueError("Non-finite returns detected.")
+        raise ValueError("Returns contain infinite or invalid values.")
 
-    if len(returns) < minimum:
-        raise ValueError(
-            f"At least {minimum} return observations required."
-        )
+    if returns.std() == 0:
+        raise ValueError("Returns have zero variance.")
 
     return returns
-
