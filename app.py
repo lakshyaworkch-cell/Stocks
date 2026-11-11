@@ -44,11 +44,16 @@ st.markdown("""
     color: #E1F1F0;
 }
 
-/* Main content spacing */
+/* Main content spacing - FIXED */
 .block-container {
-    padding-top: 1.5rem;
+    padding-top: 4.5rem !important;
     padding-bottom: 1.5rem;
     max-width: 1500px;
+}
+
+/* Keep Streamlit header above page content */
+[data-testid="stHeader"] {
+    z-index: 999;
 }
 
 /* Sidebar */
