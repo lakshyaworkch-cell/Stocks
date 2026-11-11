@@ -9,38 +9,27 @@ def rolling_forecast(
     returns,
     model_name="EGARCH",
     distribution="t",
-    window=1000,
-    refit_every=1
+    window=1000
 ):
 
     returns = pd.Series(returns).dropna()
 
     if len(returns) <= window + 10:
-        raise ValueError(
-            "Not enough observations for rolling estimation."
-        )
+        raise ValueError("Insufficient observations.")
 
-    if refit_every < 1:
-        raise ValueError("refit_every must be positive.")
-
-    output = []
-    current_result = None
+    forecasts = []
 
     for i in range(window, len(returns)):
 
-        if current_result is None or (
-            i - window
-        ) % refit_every == 0:
+        training = returns.iloc[i-window:i]
 
-            training = returns.iloc[i-window:i]
+        result = fit_model(
+            training,
+            model_name=model_name,
+            distribution=distribution
+        )
 
-            current_result = fit_model(
-                training,
-                model_name=model_name,
-                distribution=distribution
-            )
-
-        forecast = current_result.forecast(
+        forecast = result.forecast(
             horizon=1,
             reindex=False
         )
@@ -53,10 +42,7 @@ def rolling_forecast(
             forecast.mean.iloc[-1, 0]
         )
 
-        if variance <= 0 or not np.isfinite(variance):
-            raise ValueError("Invalid forecast variance.")
-
-        output.append({
+        forecasts.append({
             "Date": returns.index[i],
             "Actual Return": float(returns.iloc[i]),
             "Forecast Mean": mean,
@@ -64,31 +50,4 @@ def rolling_forecast(
             "Forecast Volatility": np.sqrt(variance)
         })
 
-    return pd.DataFrame(output).set_index("Date")
-
-
-def evaluate_forecasts(forecasts):
-
-    actual = forecasts["Actual Return"].values
-    variance = forecasts["Forecast Variance"].values
-
-    if np.any(variance <= 0):
-        raise ValueError("Forecast variances must be positive.")
-
-    realized_proxy = actual ** 2
-
-    mse = np.mean(
-        (realized_proxy - variance) ** 2
-    )
-
-    qlike = np.mean(
-        np.log(variance) +
-        realized_proxy / variance
-    )
-
-    return {
-        "MSE": float(mse),
-        "QLIKE": float(qlike),
-        "Observations": len(actual)
-    }
-
+    return pd.DataFrame(forecasts).set_index("Date")
