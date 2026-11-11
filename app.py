@@ -161,48 +161,52 @@ footer {
 """, unsafe_allow_html=True)
 
 
+
 # =====================================================
 # 3. HEADER
 # =====================================================
 
-st.markdown("""
-<div style="
-    background: linear-gradient(120deg, #101A2B, #17263C);
-    padding: 25px;
-    border-radius: 15px;
-    border: 1px solid #293951;
-    margin-bottom: 25px;
-">
-
+st.markdown(
+    """
     <div style="
-        color: #00D4AA;
-        font-size: 13px;
-        font-weight: bold;
-        letter-spacing: 3px;
+        background: linear-gradient(120deg, #101A2B, #17263C);
+        padding: 25px;
+        border-radius: 15px;
+        border: 1px solid #293951;
+        margin-bottom: 25px;
     ">
-        QUANTITATIVE RESEARCH TERMINAL
+
+        <div style="
+            color: #00D4AA;
+            font-size: 13px;
+            font-weight: bold;
+            letter-spacing: 3px;
+        ">
+            QUANTITATIVE RESEARCH TERMINAL
+        </div>
+
+        <h1 style="
+            color: #F1F5F9;
+            font-size: 34px;
+            margin-top: 8px;
+            margin-bottom: 5px;
+        ">
+            DUTCH QUANT
+        </h1>
+
+        <p style="
+            color: #94A3B8;
+            font-size: 15px;
+            margin-bottom: 0;
+        ">
+            Dutch Equity Market | EGARCH Volatility Modelling |
+            Student-t Distribution
+        </p>
+
     </div>
-
-    <h1 style="
-        font-size: 34px;
-        margin-top: 8px;
-        margin-bottom: 5px;
-    ">
-        DUTCH QUANT
-    </h1>
-
-    <p style="
-        color: #94A3B8;
-        font-size: 15px;
-        margin-bottom: 0;
-    ">
-        Dutch Equity Market | EGARCH Volatility Modelling |
-        Student-t Distribution
-    </p>
-
-</div>
-""", unsafe_allow_html=True)
-
+    """,
+    unsafe_allow_html=True
+)
 
 # =====================================================
 # 4. SIDEBAR CONFIGURATION
