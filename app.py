@@ -342,89 +342,64 @@ st.markdown(
 st.divider()
 
 
-# ============================================================
-# SIDEBAR: STOCK SELECTION AT THE TOP
-# ============================================================
+# ==========================================
+# SIDEBAR
+# ==========================================
 
-st.sidebar.markdown("## 📈 DUTCH QUANT")
-st.sidebar.caption("Research Terminal")
+st.sidebar.title("Stock Research")
 
-st.sidebar.divider()
-
-st.sidebar.markdown("### 1. Market Selection")
+# 1. Market Selection
+st.sidebar.header("1. Market Selection")
 
 company = st.sidebar.selectbox(
-    "Select Stock",
-    list(DUTCH_STOCKS.keys()),
-    key="sidebar_company"
+    "Select Dutch Stock",
+    options=list(DUTCH_STOCKS.keys()),
+    format_func=lambda x: f"{x} — {DUTCH_STOCKS[x]}"
 )
 
-ticker = DUTCH_STOCKS[company]
-
-st.sidebar.info(f"Selected ticker: {ticker}")
-
-st.sidebar.markdown("### 2. Date Range")
-
-today = date.today()
+# 2. Date Selection
+st.sidebar.header("2. Date Selection")
 
 start_date = st.sidebar.date_input(
     "Start Date",
-    value=today - timedelta(days=365 * 5),
-    min_value=date(2000, 1, 1),
-    max_value=today,
-    key="sidebar_start"
+    value=date(2018, 1, 1)
 )
 
 end_date = st.sidebar.date_input(
     "End Date",
-    value=today,
-    min_value=date(2000, 1, 1),
-    max_value=today,
-    key="sidebar_end"
+    value=date.today()
 )
 
-st.sidebar.markdown("### 3. Model Configuration")
+# 3. Model Configuration
+st.sidebar.header("3. Model Configuration")
 
 model_name = st.sidebar.selectbox(
     "Volatility Model",
-    ["EGARCH", "GARCH", "GJR-GARCH"],
-    index=0,
-    key="sidebar_model"
+    ["EGARCH", "GARCH", "GJR-GARCH"]
 )
 
 distribution = st.sidebar.selectbox(
-    "Return Distribution",
-    ["t", "normal", "skewt"],
-    index=0,
-    key="sidebar_distribution"
+    "Error Distribution",
+    ["t", "normal", "skewt"]
 )
 
 forecast_horizon = st.sidebar.slider(
-    "Forecast Horizon",
-    1,
-    20,
-    5,
-    key="sidebar_horizon"
+    "Forecast Horizon (days)",
+    min_value=1,
+    max_value=10,
+    value=1
 )
 
-st.sidebar.caption(
-    "Student-t innovations are a useful starting point "
-    "for modelling heavy-tailed financial returns."
-)
+# 4. Run Analysis
+st.sidebar.header("4. Run Analysis")
 
-load_button = st.sidebar.button(
-    "🚀 Load Data & Run Analysis",
-    type="primary",
+run_analysis = st.sidebar.button(
+    "Load Data & Run Analysis",
     use_container_width=True
 )
 
-
-# ============================================================
-# SIDEBAR: NAVIGATION BELOW STOCK SELECTION
-# ============================================================
-
-st.sidebar.divider()
-st.sidebar.markdown("### 4. Research Navigation")
+# 5. Research Navigation
+st.sidebar.header("5. Research Navigation")
 
 page = st.sidebar.radio(
     "Select Research Section",
@@ -437,16 +412,8 @@ page = st.sidebar.radio(
         "Forecasting",
         "Risk Management",
         "Model Stability & Calibration",
-        "Forecast Comparison",
-        "Portfolio Analysis"
-    ],
-    key="navigation"
-)
-
-st.sidebar.divider()
-
-st.sidebar.caption(
-    "Dutch Quant | Quantitative Finance Research"
+        "Forecast Comparison"
+    ]
 )
 
 
