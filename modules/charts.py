@@ -36,7 +36,7 @@ def returns_chart(df):
         title="Daily Log Returns",
         xaxis_title="Date",
         yaxis_title="Return (%)",
-        template="plotly_white"
+        template="plotly_dark"
     )
 
     return fig
@@ -56,7 +56,7 @@ def volatility_chart(result):
         title="EGARCH Conditional Volatility",
         xaxis_title="Date",
         yaxis_title="Volatility (%)",
-        template="plotly_white"
+        template="plotly_dark"
     )
 
     return fig
