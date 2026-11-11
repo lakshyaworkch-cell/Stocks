@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -23,7 +24,7 @@ from modules.forecast_tests import diebold_mariano_test
 # ============================================================
 
 st.set_page_config(
-    page_title="Dutch Quant | Research Terminal",
+    page_title="Research Terminal",
     page_icon="📈",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -32,7 +33,6 @@ st.set_page_config(
 
 # ============================================================
 # HIDE STREAMLIT AUTOMATIC MULTIPAGE NAVIGATION
-# This hides the top-left App / Portfolio menu.
 # ============================================================
 
 st.markdown("""
@@ -91,19 +91,6 @@ st.markdown("""
         border-radius: 8px;
         font-weight: 600;
         min-height: 42px;
-    }
-
-    .main-title {
-        font-size: 36px;
-        font-weight: 800;
-        color: #38bdf8;
-        margin-bottom: 0;
-    }
-
-    .subtitle {
-        font-size: 14px;
-        color: #94a3b8;
-        margin-top: 5px;
     }
 
     .research-card {
@@ -339,25 +326,6 @@ def make_ewma_forecasts(
 
 
 # ============================================================
-# HEADER
-# ============================================================
-
-st.markdown(
-    '<p class="main-title">DUTCH QUANT</p>',
-    unsafe_allow_html=True
-)
-
-st.markdown(
-    '<p class="subtitle">'
-    'QUANTITATIVE RESEARCH TERMINAL | VOLATILITY | RISK | FORECASTING'
-    '</p>',
-    unsafe_allow_html=True
-)
-
-st.divider()
-
-
-# ============================================================
 # SINGLE SIDEBAR
 # ============================================================
 
@@ -429,7 +397,7 @@ run_analysis = st.sidebar.button(
 st.sidebar.header("5. Research Navigation")
 
 page = st.sidebar.radio(
-    "Select Research Section",
+    "Go to",
     [
         "Overview",
         "Market Data",
@@ -532,10 +500,10 @@ has_data = (
 
 
 # ============================================================
-# TOP STATUS PANEL
+# CURRENT SESSION - OVERVIEW ONLY
 # ============================================================
 
-if has_data:
+if has_data and page == "Overview":
 
     st.markdown("### Current Research Session")
 
@@ -579,9 +547,8 @@ if page == "Overview":
     st.header("Quantitative Research Dashboard")
 
     st.write(
-        "Welcome to Dutch Quant. Select a Dutch stock from the "
-        "left sidebar, configure your model and load the data "
-        "to begin your quantitative analysis."
+        "Select a Dutch stock from the left sidebar, configure "
+        "your model and load the data to begin your analysis."
     )
 
     if has_data:
@@ -626,8 +593,6 @@ if page == "Overview":
             use_container_width=True
         )
 
-        st.subheader("Research Sections")
-
         cols = st.columns(3)
 
         sections = [
@@ -668,7 +633,7 @@ if page == "Overview":
 
         cols[0].metric("Volatility Models", "3")
         cols[1].metric("Return Distributions", "3")
-        cols[2].metric("Research Sections", "8")
+        cols[2].metric("Research Pages", "8")
 
         st.markdown("""
         **Available analysis**
@@ -705,12 +670,10 @@ elif not has_data:
     2. Select the start and end dates.
     3. Select the volatility model and distribution.
     4. Click **Load Data & Run Analysis**.
-    5. Return to this section.
     """)
 
     st.info(
-        "Your selected research section is available. "
-        "Load market data to populate its charts and statistics."
+        "Load market data to populate this section's charts and statistics."
     )
 
 
@@ -773,11 +736,17 @@ elif page == "Market Data":
         use_container_width=True
     )
 
-    st.subheader("Historical Data")
+    st.subheader("Recent Historical Data")
+
+    concise_columns = [
+        column for column in ["Close", "Volume"]
+        if column in data.columns
+    ]
 
     st.dataframe(
-        data.tail(30),
-        use_container_width=True
+        data[concise_columns].tail(10).round(2),
+        use_container_width=True,
+        height=320
     )
 
 
@@ -789,18 +758,50 @@ elif page == "Statistical Analysis":
 
     st.header("Statistical Analysis")
 
-    stats = returns.describe().to_frame("Returns")
-
-    stats.loc["Skewness"] = returns.skew()
-    stats.loc["Excess Kurtosis"] = returns.kurtosis()
-    stats.loc["Annualized Volatility"] = (
-        returns.std() * np.sqrt(252)
-    )
-
     st.subheader("Descriptive Statistics")
 
+    stat_cols = st.columns(4)
+
+    stat_cols[0].metric(
+        "Observations",
+        f"{returns.count():,}"
+    )
+
+    stat_cols[1].metric(
+        "Mean Return",
+        f"{returns.mean():.3f}%"
+    )
+
+    stat_cols[2].metric(
+        "Daily Std. Dev.",
+        f"{returns.std():.3f}%"
+    )
+
+    stat_cols[3].metric(
+        "Annualized Volatility",
+        f"{returns.std() * np.sqrt(252):.2f}%"
+    )
+
+    concise_stats = pd.DataFrame({
+        "Statistic": [
+            "Minimum",
+            "Median",
+            "Maximum",
+            "Skewness",
+            "Excess Kurtosis"
+        ],
+        "Value": [
+            returns.min(),
+            returns.median(),
+            returns.max(),
+            returns.skew(),
+            returns.kurtosis()
+        ]
+    })
+
     st.dataframe(
-        stats,
+        concise_stats.round(3),
+        hide_index=True,
         use_container_width=True
     )
 
@@ -912,12 +913,28 @@ elif page == "Model Diagnostics":
 
     diagnostics = st.session_state.diagnostics
 
+    diagnostic_table = pd.DataFrame(
+        [
+            {
+                "Diagnostic": name,
+                "Result": (
+                    f"{value:.4f}"
+                    if isinstance(
+                        value,
+                        (int, float, np.integer, np.floating)
+                    )
+                    else str(value)
+                )
+            }
+            for name, value in diagnostics.items()
+        ]
+    )
+
     st.dataframe(
-        pd.DataFrame(
-            list(diagnostics.items()),
-            columns=["Diagnostic", "Value"]
-        ),
-        use_container_width=True
+        diagnostic_table,
+        hide_index=True,
+        use_container_width=True,
+        height=min(260, 45 + 38 * len(diagnostic_table))
     )
 
     st.subheader("Standardized Residuals")
@@ -940,26 +957,9 @@ elif page == "Model Diagnostics":
         use_container_width=True
     )
 
-    st.subheader("Diagnostic Interpretation")
-
-    for name, value in diagnostics.items():
-
-        if "p-value" in name.lower():
-
-            if value < 0.05:
-
-                st.warning(
-                    f"{name}: {value:.4f} — Reject null."
-                )
-
-            else:
-
-                st.success(
-                    f"{name}: {value:.4f} — Do not reject null."
-                )
-
     st.caption(
-        "Non-rejection does not prove that the model is correctly specified."
+        "For p-values below 0.05, reject the corresponding null hypothesis. "
+        "A larger p-value does not prove the model is correctly specified."
     )
 
 
@@ -1010,10 +1010,7 @@ elif page == "Forecasting":
         height=420
     )
 
-    st.plotly_chart(
-        fig,
-        use_container_width=True
-    )
+    st.plotly_chart(fig, use_container_width=True)
 
     st.divider()
 
@@ -1118,9 +1115,7 @@ elif page == "Risk Management":
                 reindex=False
             )
 
-            variance = float(
-                forecast.variance.iloc[-1, 0]
-            )
+            variance = float(forecast.variance.iloc[-1, 0])
 
             risk = student_t_risk(
                 result,
@@ -1401,9 +1396,7 @@ elif page == "Model Stability & Calibration":
 
     else:
 
-        st.info(
-            "PIT diagnostic requires Student-t innovations."
-        )
+        st.info("PIT diagnostic requires Student-t innovations.")
 
 
 # ============================================================
@@ -1462,15 +1455,12 @@ elif page == "Forecast Comparison":
                 ).dropna()
 
                 if len(common) < 30:
-
                     raise ValueError(
                         "Not enough common forecast observations."
                     )
 
                 actual = common["Actual Return"] ** 2
-
                 model_var = common["Forecast Variance"]
-
                 ewma_var = common["EWMA Variance"]
 
                 model_qlike = np.mean(
@@ -1559,33 +1549,17 @@ elif page == "Forecast Comparison":
 
         dm = comparison["DM QLIKE"]
 
-        st.write(
-            f"Statistic: {dm['DM Statistic']:.4f}"
-        )
-
-        st.write(
-            f"P-value: {dm['P-value']:.4f}"
-        )
-
-        st.write(
-            f"Lower average loss: {dm['Lower Average Loss']}"
-        )
+        st.write(f"Statistic: {dm['DM Statistic']:.4f}")
+        st.write(f"P-value: {dm['P-value']:.4f}")
+        st.write(f"Lower average loss: {dm['Lower Average Loss']}")
 
         st.subheader("Diebold-Mariano MSE Test")
 
         dm = comparison["DM MSE"]
 
-        st.write(
-            f"Statistic: {dm['DM Statistic']:.4f}"
-        )
-
-        st.write(
-            f"P-value: {dm['P-value']:.4f}"
-        )
-
-        st.write(
-            f"Lower average loss: {dm['Lower Average Loss']}"
-        )
+        st.write(f"Statistic: {dm['DM Statistic']:.4f}")
+        st.write(f"P-value: {dm['P-value']:.4f}")
+        st.write(f"Lower average loss: {dm['Lower Average Loss']}")
 
         common = st.session_state.comparison_forecasts
 
@@ -1610,11 +1584,7 @@ elif page == "Forecast Comparison":
         )
 
         st.plotly_chart(
-            make_chart(
-                fig,
-                "Out-of-Sample Forecasts",
-                "Volatility (%)"
-            ),
+            make_chart(fig, "Out-of-Sample Forecasts", "Volatility (%)"),
             use_container_width=True
         )
 
@@ -1631,6 +1601,6 @@ elif page == "Forecast Comparison":
 st.divider()
 
 st.caption(
-    "DUTCH QUANT | QUANTITATIVE FINANCIAL RESEARCH | "
+    "Quantitative Financial Research | "
     "Educational and research purposes only. Not investment advice."
 )
